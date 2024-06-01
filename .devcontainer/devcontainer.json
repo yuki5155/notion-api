@@ -1,0 +1,23 @@
+{
+	"name": "Existing Dockerfile",
+	"build": {
+	  "context": "..",
+	  "dockerfile": "../Dockerfile"
+	},
+	"features": {},
+	"customizations": {
+	  "vscode": {
+		"extensions": [
+			"GitHub.copilot",
+			"ms-python.python"
+		],
+		"settings": {
+		  "python.formatting.provider": "black",
+		  "editor.formatOnSave": true
+		}
+	  }
+	}
+}
+  
+
+  
