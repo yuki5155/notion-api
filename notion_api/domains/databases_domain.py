@@ -172,6 +172,17 @@ class CreateDatabaseParams:
             "properties": self.properties.to_dict()
         }
     
+@dataclass
+class DatabaseTitle:
+    content: str
+    link: Optional[str] = None
+
+    def to_dict(self):
+        return {
+            "content": self.content,
+            "link": self.link
+        }
+    
 
 if __name__ == "__main__":
     p = Parent(page_id="sample")

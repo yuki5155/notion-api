@@ -5,8 +5,8 @@ sys.path.append(module_path)
 from client import BaseAPIClient
 from exceptions import APIClientNotFountError
 from .v1_base_service import BaseService
-from domains.databases_domain import (
-    NewDatabase, CreateDatabaseParams, Parent, RichText, Text, MultiSelectOption
+from notion_api.domains.databases_domain import (
+    NewDatabase, CreateDatabaseParams, Parent, RichText, Text, MultiSelectOption, DatabaseTitle
 )
 
 class DataBaseService(BaseService):
@@ -14,22 +14,23 @@ class DataBaseService(BaseService):
         db = NewDatabase(self.client.get(f'v1/databases/{database_id}'))
         return db
     
-    def create_notion_database(self, title: str, parent_id: str, properties: dict):
+    def create_notion_database(self, title: DatabaseTitle, parent_id: str, properties: dict):
         if title is None:
             raise ValueError("Title is required")
+        
         if parent_id is None:
             raise ValueError("Parent ID is required")
         if properties is None:
             raise ValueError("Properties is required")
         
+        if not isinstance(title, DatabaseTitle):
+            raise ValueError(f"Title must be an instance of DatabaseTitle, got {type(title)} instead")
+        
         data = {
             "title": [
                 {
                     "type": "text",
-                    "text": {
-                        "content": title,
-                        "link": None
-                    }
+                    "text": title.to_dict()
                 }
             ],
             "parent": {

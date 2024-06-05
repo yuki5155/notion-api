@@ -4,6 +4,7 @@ import sys
 module_path = os.path.join(os.path.dirname(__file__), '..', '..', "..", "..")
 sys.path.append(module_path)
 from notion_api.services.v1.databases import DataBaseService
+from notion_api.domains.databases_domain import DatabaseTitle       
 
 def test_get_databases_detail():
 
@@ -25,5 +26,6 @@ def test_create_database():
         "Name": {"title": {}},
         "Tags": {"multi_select": {"options": [{"name": "tag1"}, {"name": "tag2"}]}}
     }
-    response = d.create_notion_database("Grocery List", parent_id, database_property)
+    database_title = DatabaseTitle(content="Grocery List")
+    response = d.create_notion_database(database_title, parent_id, database_property)
     assert response["code"] == 200
