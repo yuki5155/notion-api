@@ -15,7 +15,12 @@ class DataBaseService(BaseService):
         return db
     
     def create_notion_database(self, title: str, parent_id: str, properties: dict):
-        database_title = [RichText(text=Text(content=title))]
+        if title is None:
+            raise ValueError("Title is required")
+        if parent_id is None:
+            raise ValueError("Parent ID is required")
+        if properties is None:
+            raise ValueError("Properties is required")
         
         data = {
             "title": [
