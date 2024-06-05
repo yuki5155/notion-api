@@ -26,6 +26,9 @@ class BaseAPIClient(requests.Session):
     
     def _handle_response(self, response):
         if response.status_code == 200:
-            return response.json()
+            return {
+                "code":200,
+                "body": response.json()
+            }
         else:
             raise Exception(response.json())

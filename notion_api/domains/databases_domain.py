@@ -26,7 +26,7 @@ class Title:
     text: TextContent
     annotations: Annotations
     plain_text: str
-    href: Optional[str]
+    href: Optional[str] = None
 
 @dataclass
 class SelectOption:
@@ -71,6 +71,7 @@ class Database:
 
 # 辞書データをクラスインスタンスに変換する関数
 def NewDatabase(data: Dict[str, Any]) -> Database:
+    data = data['body']
     return Database(
         object=data['object'],
         id=data['id'],
@@ -97,3 +98,81 @@ def NewDatabase(data: Dict[str, Any]) -> Database:
         in_trash=data['in_trash'],
         request_id=data['request_id']
     )
+
+# ----------------------------------------------------------------
+# create parameters
+# ----------------------------------------------------------------
+
+@dataclass
+class Text:
+    content: str
+
+    def to_dict(self):
+        return {
+            "content": self.content
+        }
+
+@dataclass
+class RichText:
+    type: str = "text"
+    text: Text = field(default_factory=Text)
+
+    def to_dict(self):
+        return {
+            "type": self.type,
+            "text": self.text.to_dict()
+        }
+
+@dataclass
+class MultiSelectOption:
+    name: str
+    color: str = "default"
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "color": self.color
+        }
+
+@dataclass
+class MultiSelect:
+    options: List[MultiSelectOption] = field(default_factory=list)
+
+    def to_dict(self):
+        return {
+            "multi_select": {
+                "options": [option.to_dict() for option in self.options]
+            }
+        }
+
+
+
+@dataclass
+class Parent:
+    type: str = "page_id"
+    page_id: str = ""
+
+    def to_dict(self):
+        return {
+            "type": self.type,
+            "page_id": self.page_id            
+        }
+
+
+@dataclass
+class CreateDatabaseParams:
+    parent: Parent
+    title: List[RichText]
+    properties: dict
+
+    def to_dict(self):
+        return {
+            "parent": self.parent.to_dict(),
+            "title": self.title.to_dict(),
+            "properties": self.properties.to_dict()
+        }
+    
+
+if __name__ == "__main__":
+    p = Parent(page_id="sample")
+    print(p.to_dict())

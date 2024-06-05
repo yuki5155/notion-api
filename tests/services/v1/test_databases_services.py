@@ -5,7 +5,6 @@ module_path = os.path.join(os.path.dirname(__file__), '..', '..', "..", "..")
 sys.path.append(module_path)
 from notion_api.services.v1.databases import DataBaseService
 
-
 def test_get_databases_detail():
 
     d = DataBaseService()
@@ -19,4 +18,12 @@ def test_get_databases_detail():
     assert data.properties["決算"].type == "select"
     assert data.properties["決算"].select["options"][0]["name"] == "年次決算"
 
-
+def test_create_database():
+    d = DataBaseService()
+    parent_id = "a214e6c2d6e044d39cb5b98dc438c5dc"
+    database_property = {
+        "Name": {"title": {}},
+        "Tags": {"multi_select": {"options": [{"name": "tag1"}, {"name": "tag2"}]}}
+    }
+    response = d.create_notion_database("Grocery List", parent_id, database_property)
+    assert response["code"] == 200
