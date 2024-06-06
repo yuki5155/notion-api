@@ -19,13 +19,24 @@ def test_get_databases_detail():
     assert data.properties["決算"].type == "select"
     assert data.properties["決算"].select["options"][0]["name"] == "年次決算"
 
-def test_create_database():
+# def test_create_database():
+#     d = DataBaseService()
+#     parent_id = "a214e6c2d6e044d39cb5b98dc438c5dc"
+#     database_property = {
+#         "Name": {"title": {}},
+#         "Tags": {"multi_select": {"options": [{"name": "tag1"}, {"name": "tag2"}]}}
+#     }
+#     database_title = DatabaseTitle(content="Grocery List")
+#     response = d.create_notion_database(database_title, parent_id, database_property)
+#     assert response["code"] == 200
+
+def test_get_all_records():
     d = DataBaseService()
-    parent_id = "a214e6c2d6e044d39cb5b98dc438c5dc"
-    database_property = {
-        "Name": {"title": {}},
-        "Tags": {"multi_select": {"options": [{"name": "tag1"}, {"name": "tag2"}]}}
-    }
-    database_title = DatabaseTitle(content="Grocery List")
-    response = d.create_notion_database(database_title, parent_id, database_property)
-    assert response["code"] == 200
+    database_id = "6ef167bccb674124810c99f06ea1da8f"
+    
+    for i in d.get_database_records(database_id):
+        if i["株価(3/1)"]["number"] is not None:
+            assert  i["株価(3/1)"]["number"] in [5200, 3570, 1466]
+    
+
+

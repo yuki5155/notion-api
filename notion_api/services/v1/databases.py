@@ -40,3 +40,6 @@ class DataBaseService(BaseService):
             "properties": properties
         }
         return self.client.post('v1/databases', data)
+    
+    def get_database_records(self, database_id: str):
+        return [p["properties"] for p in self.client.post(f'v1/databases/{database_id}/query')["body"]["results"]]
