@@ -54,6 +54,10 @@ class DataBaseService(BaseService):
         ]
 
     def filter_database_records(self, database_id: str, filter_params: dict):
+        if not isinstance(filter_params, dict):
+            raise ValueError(
+                f"Filter params must be a dictionary, got {type(filter_params)} instead"
+            )
         return [
             p["properties"]
             for p in self.client.post(
