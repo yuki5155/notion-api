@@ -4,7 +4,7 @@ setup(
     name="notion-api",
     version="0.0.1",
     author="Yuki Asano",
-    author_email="yukiasano55@gmail.com",
+    author_email="yukiafree@gmail.com",
     description="A short description of your package",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
