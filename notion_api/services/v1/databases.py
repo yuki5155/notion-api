@@ -2,8 +2,8 @@ import sys
 import os
 module_path = os.path.join(os.path.dirname(__file__), '..', '..')
 sys.path.append(module_path)
-from client import BaseAPIClient
-from exceptions import APIClientNotFountError
+from notion_api.utils.client import BaseAPIClient
+from notion_api.utils.exceptions import APIClientNotFountError
 from .v1_base_service import BaseService
 from notion_api.domains.databases_domain import (
     NewDatabase, CreateDatabaseParams, Parent, RichText, Text, MultiSelectOption, DatabaseTitle
