@@ -43,3 +43,6 @@ class DataBaseService(BaseService):
     
     def get_database_records(self, database_id: str):
         return [p["properties"] for p in self.client.post(f'v1/databases/{database_id}/query')["body"]["results"]]
+    
+    def filter_database_records(self, database_id: str, filter_params: dict):
+        return [p["properties"] for p in self.client.post(f'v1/databases/{database_id}/query', filter_params)["body"]["results"]]

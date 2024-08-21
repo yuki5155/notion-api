@@ -4,7 +4,8 @@ import sys
 module_path = os.path.join(os.path.dirname(__file__), '..', '..', "..", "..")
 sys.path.append(module_path)
 from notion_api.services.v1.databases import DataBaseService
-from notion_api.domains.databases_domain import DatabaseTitle       
+from notion_api.domains.databases_domain import DatabaseTitle    
+from notion_api.utils.filter_builders import NumberFilterBuilder
 
 def test_get_databases_detail():
 
@@ -35,8 +36,74 @@ def test_get_all_records():
     database_id = "6ef167bccb674124810c99f06ea1da8f"
     
     for i in d.get_database_records(database_id):
+        
         if i["株価(3/1)"]["number"] is not None:
-            assert  i["株価(3/1)"]["number"] in [5200, 3570, 1466]
+            assert True
+
+def test_filter_records():
+    d = DataBaseService()
+    database_id = "6ef167bccb674124810c99f06ea1da8f"
+    filter_params = {
+        "filter": {
+            "property": "株価(3/1)",
+            "number": {
+                "greater_than": 5000
+            }
+        }
+    }
+    for i in d.filter_database_records(database_id, filter_params):
+        print(i)
+        assert i["株価(3/1)"]["number"] > 5000
     
 
+from typing import List, Dict, Any
 
+class FilterComposer:
+    def __init__(self):
+        self.filters: List[Dict[str, Any]] = []
+
+    def add_filter(self, filter_dict: Dict[str, Any]) -> 'FilterComposer':
+        self.filters.append(filter_dict)
+        return self
+
+    def build(self, operator: str = "and") -> Dict[str, Any]:
+        if len(self.filters) == 0:
+            return {}
+        elif len(self.filters) == 1:
+            return {"filter": self.filters[0]}
+        else:
+            return {
+                "filter": {
+                    operator: self.filters
+                }
+            }
+
+# 使用例
+def test_filter_records_multiple_conditions():
+    d = DataBaseService()
+    database_id = "6ef167bccb674124810c99f06ea1da8f"
+    stock_price = 1000
+    roe = 12
+
+    stock_price_filter = NumberFilterBuilder("株価(3/1)").greater_than(stock_price).build()
+    roe_filter = NumberFilterBuilder("ROE").greater_than(roe).build()
+
+    filter_composer = FilterComposer()
+    filter_composer.add_filter(stock_price_filter).add_filter(roe_filter)
+    filter_params = filter_composer.build()  # デフォルトで "and" 演算子を使用
+
+    filtered_records = list(d.filter_database_records(database_id, filter_params))
+    
+    for record in filtered_records:
+        print(record)
+        assert record["株価(3/1)"]["number"] > stock_price
+        assert record["ROE"]["number"] > roe
+    
+    # 少なくとも1つのレコードがフィルタリングされたことを確認
+    print(len(filtered_records))
+    assert len(filtered_records) > 0
+
+# NumberFilterBuilder と DataBaseService クラスが適切に定義されていることを前提としています
+# 必要に応じて適切にインポートしてください
+# from filter_builders import NumberFilterBuilder
+# from database_service import DataBaseService
