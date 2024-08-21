@@ -5,7 +5,7 @@ module_path = os.path.join(os.path.dirname(__file__), '..', '..', "..", "..")
 sys.path.append(module_path)
 from notion_api.services.v1.databases import DataBaseService
 from notion_api.domains.databases_domain import DatabaseTitle    
-from notion_api.utils.filter_builders import NumberFilterBuilder
+from notion_api.domains.databases_filter_builders_domain import NumberFilterBuilder, FilterComposer
 
 def test_get_databases_detail():
 
@@ -42,28 +42,6 @@ def test_get_all_records():
 
     
 
-from typing import List, Dict, Any
-
-class FilterComposer:
-    def __init__(self):
-        self.filters: List[Dict[str, Any]] = []
-
-    def add_filter(self, filter_dict: Dict[str, Any]) -> 'FilterComposer':
-        self.filters.append(filter_dict)
-        return self
-
-    def build(self, operator: str = "and") -> Dict[str, Any]:
-        if len(self.filters) == 0:
-            return {}
-        elif len(self.filters) == 1:
-            return {"filter": self.filters[0]}
-        else:
-            return {
-                "filter": {
-                    operator: self.filters
-                }
-            }
-
 def test_filter_records():
     d = DataBaseService()
     database_id = "6ef167bccb674124810c99f06ea1da8f"
@@ -79,12 +57,10 @@ def test_filter_records():
     filtered_records = d.filter_database_records(database_id, filter_params)
     
     for record in filtered_records:
-        print(record)
         assert record["株価(3/1)"]["number"] > stock_price_threshold
 
     # 少なくとも1つのレコードがフィルタリングされたことを確認
     filtered_records_list = list(filtered_records)
-    print(f"フィルタリングされたレコード数: {len(filtered_records_list)}")
     assert len(filtered_records_list) > 0
 
 # 複数条件のテストケース
@@ -109,5 +85,34 @@ def test_filter_records_multiple_conditions():
     
     # 少なくとも1つのレコードがフィルタリングされたことを確認
     filtered_records_list = list(filtered_records)
-    print(f"フィルタリングされたレコード数: {len(filtered_records_list)}")
     assert len(filtered_records_list) > 0
+
+def test_filter_records_or_condition():
+    d = DataBaseService()
+    database_id = "6ef167bccb674124810c99f06ea1da8f"
+    stock_price_threshold = 10000
+    roe_threshold = 20
+
+    # Create filters
+    stock_price_filter = NumberFilterBuilder("株価(3/1)").greater_than(stock_price_threshold).build()
+    roe_filter = NumberFilterBuilder("ROE").greater_than(roe_threshold).build()
+
+    # Use FilterComposer to build OR filter
+    filter_composer = FilterComposer()
+    filter_params = filter_composer.add_filter(stock_price_filter).add_filter(roe_filter).build("or")
+
+    filtered_records = d.filter_database_records(database_id, filter_params)
+    
+    for record in filtered_records:
+        assert (record["株価(3/1)"]["number"] > stock_price_threshold or 
+                record["ROE"]["number"] > roe_threshold)
+    
+    # Ensure at least one record was filtered
+    filtered_records_list = list(filtered_records)
+    assert len(filtered_records_list) > 0
+
+    # Additional check to ensure OR condition is working
+    only_high_stock_price = any(record["株価(3/1)"]["number"] > stock_price_threshold and record["ROE"]["number"] <= roe_threshold for record in filtered_records_list)
+    only_high_roe = any(record["ROE"]["number"] > roe_threshold and record["株価(3/1)"]["number"] <= stock_price_threshold for record in filtered_records_list)
+    
+    assert only_high_stock_price or only_high_roe, "OR condition is not working as expected"

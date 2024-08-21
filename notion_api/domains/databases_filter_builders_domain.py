@@ -1,4 +1,25 @@
+from typing import List, Dict, Any
 from abc import ABC, abstractmethod
+
+class FilterComposer:
+    def __init__(self):
+        self.filters: List[Dict[str, Any]] = []
+
+    def add_filter(self, filter_dict: Dict[str, Any]) -> 'FilterComposer':
+        self.filters.append(filter_dict)
+        return self
+
+    def build(self, operator: str = "and") -> Dict[str, Any]:
+        if len(self.filters) == 0:
+            return {}
+        elif len(self.filters) == 1:
+            return {"filter": self.filters[0]}
+        else:
+            return {
+                "filter": {
+                    operator: self.filters
+                }
+            }
 
 class BaseFilterBuilder(ABC):
     def __init__(self, property_name):
