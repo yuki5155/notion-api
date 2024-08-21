@@ -40,20 +40,6 @@ def test_get_all_records():
         if i["株価(3/1)"]["number"] is not None:
             assert True
 
-def test_filter_records():
-    d = DataBaseService()
-    database_id = "6ef167bccb674124810c99f06ea1da8f"
-    filter_params = {
-        "filter": {
-            "property": "株価(3/1)",
-            "number": {
-                "greater_than": 5000
-            }
-        }
-    }
-    for i in d.filter_database_records(database_id, filter_params):
-        print(i)
-        assert i["株価(3/1)"]["number"] > 5000
     
 
 from typing import List, Dict, Any
@@ -78,7 +64,30 @@ class FilterComposer:
                 }
             }
 
-# 使用例
+def test_filter_records():
+    d = DataBaseService()
+    database_id = "6ef167bccb674124810c99f06ea1da8f"
+    stock_price_threshold = 5000
+
+    # NumberFilterBuilder を使用してフィルターを作成
+    stock_price_filter = NumberFilterBuilder("株価(3/1)").greater_than(stock_price_threshold).build()
+
+    # FilterComposer を使用してフィルターパラメータを構築
+    filter_composer = FilterComposer()
+    filter_params = filter_composer.add_filter(stock_price_filter).build()
+
+    filtered_records = d.filter_database_records(database_id, filter_params)
+    
+    for record in filtered_records:
+        print(record)
+        assert record["株価(3/1)"]["number"] > stock_price_threshold
+
+    # 少なくとも1つのレコードがフィルタリングされたことを確認
+    filtered_records_list = list(filtered_records)
+    print(f"フィルタリングされたレコード数: {len(filtered_records_list)}")
+    assert len(filtered_records_list) > 0
+
+# 複数条件のテストケース
 def test_filter_records_multiple_conditions():
     d = DataBaseService()
     database_id = "6ef167bccb674124810c99f06ea1da8f"
@@ -89,10 +98,9 @@ def test_filter_records_multiple_conditions():
     roe_filter = NumberFilterBuilder("ROE").greater_than(roe).build()
 
     filter_composer = FilterComposer()
-    filter_composer.add_filter(stock_price_filter).add_filter(roe_filter)
-    filter_params = filter_composer.build()  # デフォルトで "and" 演算子を使用
+    filter_params = filter_composer.add_filter(stock_price_filter).add_filter(roe_filter).build()
 
-    filtered_records = list(d.filter_database_records(database_id, filter_params))
+    filtered_records = d.filter_database_records(database_id, filter_params)
     
     for record in filtered_records:
         print(record)
@@ -100,10 +108,6 @@ def test_filter_records_multiple_conditions():
         assert record["ROE"]["number"] > roe
     
     # 少なくとも1つのレコードがフィルタリングされたことを確認
-    print(len(filtered_records))
-    assert len(filtered_records) > 0
-
-# NumberFilterBuilder と DataBaseService クラスが適切に定義されていることを前提としています
-# 必要に応じて適切にインポートしてください
-# from filter_builders import NumberFilterBuilder
-# from database_service import DataBaseService
+    filtered_records_list = list(filtered_records)
+    print(f"フィルタリングされたレコード数: {len(filtered_records_list)}")
+    assert len(filtered_records_list) > 0
