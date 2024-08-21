@@ -14,4 +14,6 @@ RUN pip install black
 # RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code to the container
+RUN pip install requests
+RUN pip install pytest
 COPY . .

@@ -1,4 +1,4 @@
-# programming-searching-engine-datae
+
 
 
 https://www.notion.so/6ef167bccb674124810c99f06ea1da8f?v=a5b8fd297b934b4db27a5e50f4c16e68
@@ -47,4 +47,10 @@ api_request_lib/
     ├── usage.md
     ├── api_reference.md
 
+```
+
+## pythonpath
+
+```
+export PYTHONPATH=$PYTHONPATH:/workspaces/notion-api/notion_api
 ```
