@@ -1,11 +1,12 @@
 from typing import List, Dict, Any
 from abc import ABC, abstractmethod
 
+
 class FilterComposer:
     def __init__(self):
         self.filters: List[Dict[str, Any]] = []
 
-    def add_filter(self, filter_dict: Dict[str, Any]) -> 'FilterComposer':
+    def add_filter(self, filter_dict: Dict[str, Any]) -> "FilterComposer":
         self.filters.append(filter_dict)
         return self
 
@@ -15,11 +16,8 @@ class FilterComposer:
         elif len(self.filters) == 1:
             return {"filter": self.filters[0]}
         else:
-            return {
-                "filter": {
-                    operator: self.filters
-                }
-            }
+            return {"filter": {operator: self.filters}}
+
 
 class BaseFilterBuilder(ABC):
     def __init__(self, property_name):
@@ -33,6 +31,7 @@ class BaseFilterBuilder(ABC):
     def _add_condition(self, condition_name, value):
         self.condition[condition_name] = value
         return self
+
 
 class NumberFilterBuilder(BaseFilterBuilder):
     def does_not_equal(self, value):
@@ -60,7 +59,4 @@ class NumberFilterBuilder(BaseFilterBuilder):
         return self._add_condition("is_not_empty", True)
 
     def build(self):
-        return {
-            "property": self.property_name,
-            "number": self.condition
-        }
+        return {"property": self.property_name, "number": self.condition}
