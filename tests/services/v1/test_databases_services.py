@@ -9,6 +9,8 @@ from notion_api.utils.databases_filter_builders import (
     NumberFilterBuilder,
     FilterComposer,
 )
+from notion_api.services.v1.databases import DataBaseService
+from notion_api.utils.exceptions import APIClientNotFountError
 
 
 def test_get_databases_detail():
@@ -147,3 +149,27 @@ def test_filter_records_or_condition():
     assert (
         only_high_stock_price or only_high_roe
     ), "OR condition is not working as expected"
+
+
+def test_insert_record():
+    d = DataBaseService()
+    database_id = "6ef167bccb674124810c99f06ea1da8f"  # Test database ID
+
+    # Test properties - using only properties that exist in the database
+    properties = {
+        "株価(3/1)": {"number": 5000},
+        "ROE": {"number": 15},
+        "決算": {"select": {"name": "年次決算"}},
+    }
+
+    # Insert record
+    new_record = d.insert_record(database_id, properties)
+
+    # Verify the inserted record
+    assert isinstance(new_record, dict)
+
+    # Check the properties in the returned data
+    result = new_record["properties"]
+    assert result["株価(3/1)"]["number"] == 5000
+    assert result["ROE"]["number"] == 15
+    assert result["決算"]["select"]["name"] == "年次決算"
