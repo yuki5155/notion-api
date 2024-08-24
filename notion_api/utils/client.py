@@ -24,6 +24,11 @@ class BaseAPIClient(requests.Session):
         response = super().post(url, json=data, **kwargs)
         return self._handle_response(response)
 
+    def patch(self, endpoint, data=None, **kwargs):
+        url = f"{self.base_url}/{endpoint}"
+        response = super().patch(url, json=data, **kwargs)
+        return self._handle_response(response)
+
     def _handle_response(self, response):
         if response.status_code == 200:
             return {"code": 200, "body": response.json()}

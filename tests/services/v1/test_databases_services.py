@@ -160,6 +160,7 @@ def test_insert_record():
     record.add_property("株価(3/1)", 9999)
     record.add_property("ROE", 20)
     record.add_property("決算", "年次決算")
+    # record.add_property("テスト用", True)
 
     # Insert record
     new_record = d.insert_record(database_id, record.to_dict())
@@ -172,3 +173,36 @@ def test_insert_record():
     assert result["株価(3/1)"]["number"] == 9999
     assert result["ROE"]["number"] == 20
     assert result["決算"]["select"]["name"] == "年次決算"
+
+
+def test_update_record():
+    d = DataBaseService()
+    database_id = "6ef167bccb674124810c99f06ea1da8f"  # Test database ID
+
+    # First, insert a new record
+    insert_record = DatabaseRecord(database_id)
+    insert_record.add_property("株価(3/1)", 1000)
+    insert_record.add_property("ROE", 10)
+    insert_record.add_property("決算", "年次決算")
+    # insert_record.add_property("テスト用", True)
+
+    new_record = d.insert_record(database_id, insert_record.to_dict())
+    page_id = new_record["id"]
+
+    # Now, update the record
+    update_record = DatabaseRecord(database_id)
+    update_record.add_property("株価(3/1)", 1500)
+    update_record.add_property("ROE", 15)
+
+    updated_record = d.update_record(page_id, update_record)
+
+    # Verify the updated record
+    assert isinstance(updated_record, dict)
+
+    # Check the updated properties
+    result = updated_record["properties"]
+    assert result["株価(3/1)"]["number"] == 1500
+    assert result["ROE"]["number"] == 15
+    assert (
+        result["決算"]["select"]["name"] == "年次決算"
+    )  # This should remain unchanged

@@ -15,6 +15,7 @@ from notion_api.domains.databases_domain import (
     MultiSelectOption,
     DatabaseTitle,
 )
+from notion_api.utils.database_record_ops import DatabaseRecord
 
 
 class DataBaseService(BaseService):
@@ -88,3 +89,27 @@ class DataBaseService(BaseService):
             return response["body"]
         else:
             raise APIClientNotFountError(f"Failed to insert record: {response}")
+
+    def update_record(self, page_id: str, record: DatabaseRecord):
+        """
+        データベース内の既存のレコードを更新します。
+
+        :param page_id: 更新するレコード（ページ）のID
+        :param record: 更新するレコードの情報（DatabaseRecordオブジェクト）
+        :return: 更新されたレコードの情報
+        """
+        if not page_id:
+            raise ValueError("Page ID is required")
+        if not isinstance(record, DatabaseRecord):
+            raise ValueError("record must be an instance of DatabaseRecord")
+
+        data = record.to_dict()
+        # parentプロパティは更新時に不要なので削除
+        data.pop("parent", None)
+
+        response = self.client.patch(f"v1/pages/{page_id}", data)
+
+        if response["code"] == 200:
+            return response["body"]
+        else:
+            raise APIClientNotFountError(f"Failed to update record: {response}")
