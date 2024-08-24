@@ -12,6 +12,11 @@ from notion_api.utils.databases_filter_builders import (
 from notion_api.services.v1.databases import DataBaseService
 from notion_api.utils.exceptions import APIClientNotFountError
 from notion_api.utils.database_record_ops import DatabaseRecord
+import json
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 database_id = "6ef167bccb674124810c99f06ea1da8f"
 
@@ -95,7 +100,6 @@ def test_filter_records_multiple_conditions():
     filtered_records = d.filter_database_records(database_id, filter_params)
 
     for record in filtered_records:
-        print(record)
         assert record["株価(3/1)"]["number"] > stock_price
         assert record["ROE"]["number"] > roe
 
@@ -160,49 +164,52 @@ def test_insert_record():
     record.add_property("株価(3/1)", 9999)
     record.add_property("ROE", 20)
     record.add_property("決算", "年次決算")
-    # record.add_property("テスト用", True)
+    record.add_property("is_test", True)
 
-    # Insert record
+    print("Record data before insertion:")
+    print(json.dumps(record.to_dict(), indent=2))
+
     new_record = d.insert_record(database_id, record.to_dict())
 
-    # Verify the inserted record
     assert isinstance(new_record, dict)
 
-    # Check the properties in the returned data
     result = new_record["properties"]
     assert result["株価(3/1)"]["number"] == 9999
     assert result["ROE"]["number"] == 20
     assert result["決算"]["select"]["name"] == "年次決算"
+    assert result["is_test"]["checkbox"] == True
 
 
 def test_update_record():
     d = DataBaseService()
-    database_id = "6ef167bccb674124810c99f06ea1da8f"  # Test database ID
+    database_id = "6ef167bccb674124810c99f06ea1da8f"
 
-    # First, insert a new record
     insert_record = DatabaseRecord(database_id)
     insert_record.add_property("株価(3/1)", 1000)
     insert_record.add_property("ROE", 10)
     insert_record.add_property("決算", "年次決算")
-    # insert_record.add_property("テスト用", True)
+    insert_record.add_property("is_test", True)
+
+    print("Record data before insertion:")
+    print(json.dumps(insert_record.to_dict(), indent=2))
 
     new_record = d.insert_record(database_id, insert_record.to_dict())
     page_id = new_record["id"]
 
-    # Now, update the record
     update_record = DatabaseRecord(database_id)
     update_record.add_property("株価(3/1)", 1500)
     update_record.add_property("ROE", 15)
+    update_record.add_property("is_test", True)
+
+    print("Record data before update:")
+    print(json.dumps(update_record.to_dict(), indent=2))
 
     updated_record = d.update_record(page_id, update_record)
 
-    # Verify the updated record
     assert isinstance(updated_record, dict)
 
-    # Check the updated properties
     result = updated_record["properties"]
     assert result["株価(3/1)"]["number"] == 1500
     assert result["ROE"]["number"] == 15
-    assert (
-        result["決算"]["select"]["name"] == "年次決算"
-    )  # This should remain unchanged
+    assert result["決算"]["select"]["name"] == "年次決算"
+    assert result["is_test"]["checkbox"] == True

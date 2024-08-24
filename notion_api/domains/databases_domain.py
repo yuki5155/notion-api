@@ -41,15 +41,30 @@ class SelectOption:
     description: Optional[str] = None
 
 
-@dataclass
 class Property:
-    id: str
-    name: str
-    type: str
-    select: Optional[Dict[str, Any]] = field(default_factory=dict)
-    formula: Optional[Dict[str, Any]] = field(default_factory=dict)
-    number: Optional[Dict[str, Any]] = field(default_factory=dict)
-    title: Optional[Dict[str, Any]] = field(default_factory=dict)
+    def __init__(self, id, type, **kwargs):
+        self.id = id
+        self.type = type
+        self.name = kwargs.get("name")
+        self.title = kwargs.get("title")
+        self.rich_text = kwargs.get("rich_text")
+        self.number = kwargs.get("number")
+        self.select = kwargs.get("select")
+        self.multi_select = kwargs.get("multi_select")
+        self.date = kwargs.get("date")
+        self.people = kwargs.get("people")
+        self.files = kwargs.get("files")
+        self.checkbox = kwargs.get("checkbox")
+        self.url = kwargs.get("url")
+        self.email = kwargs.get("email")
+        self.phone_number = kwargs.get("phone_number")
+        self.formula = kwargs.get("formula")
+        self.relation = kwargs.get("relation")
+        self.rollup = kwargs.get("rollup")
+        self.created_time = kwargs.get("created_time")
+        self.created_by = kwargs.get("created_by")
+        self.last_edited_time = kwargs.get("last_edited_time")
+        self.last_edited_by = kwargs.get("last_edited_by")
 
 
 @dataclass

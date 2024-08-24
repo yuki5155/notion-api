@@ -16,6 +16,12 @@ from notion_api.domains.databases_domain import (
     DatabaseTitle,
 )
 from notion_api.utils.database_record_ops import DatabaseRecord
+import json
+import logging
+import requests
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class DataBaseService(BaseService):
@@ -67,49 +73,43 @@ class DataBaseService(BaseService):
         ]
 
     def insert_record(self, database_id: str, record_data: dict):
-        """
-        データベースに新しいレコードを挿入します。
-
-        :param database_id: 挿入先のデータベースID
-        :param record_data: 挿入するレコードのデータ
-        :return: 作成されたレコードの情報
-        """
         if not database_id:
             raise ValueError("Database ID is required")
         if not record_data:
             raise ValueError("Record data is required")
 
-        # Ensure the correct structure of the record_data
         if "parent" not in record_data or "properties" not in record_data:
             raise ValueError("Invalid record data structure")
 
+        print("Payload being sent to Notion API:")
+        print(json.dumps(record_data, indent=2))
+
         response = self.client.post("v1/pages", record_data)
 
-        if response["code"] == 200:
+        if isinstance(response, dict) and response.get("code") == 200:
+            print("Record inserted successfully")
             return response["body"]
         else:
+            print(f"Failed to insert record: {response}")
+            if isinstance(response, requests.Response):
+                print(f"Response content: {response.text}")
             raise APIClientNotFountError(f"Failed to insert record: {response}")
 
     def update_record(self, page_id: str, record: DatabaseRecord):
-        """
-        データベース内の既存のレコードを更新します。
-
-        :param page_id: 更新するレコード（ページ）のID
-        :param record: 更新するレコードの情報（DatabaseRecordオブジェクト）
-        :return: 更新されたレコードの情報
-        """
         if not page_id:
             raise ValueError("Page ID is required")
-        if not isinstance(record, DatabaseRecord):
-            raise ValueError("record must be an instance of DatabaseRecord")
 
         data = record.to_dict()
-        # parentプロパティは更新時に不要なので削除
-        data.pop("parent", None)
+        data.pop("parent", None)  # Remove parent property for updates
+
+        logger.debug(f"Updating record with page ID {page_id}")
+        logger.debug(f"Update data: {json.dumps(data, indent=2)}")
 
         response = self.client.patch(f"v1/pages/{page_id}", data)
 
         if response["code"] == 200:
+            logger.info("Record updated successfully")
             return response["body"]
         else:
+            logger.error(f"Failed to update record: {response}")
             raise APIClientNotFountError(f"Failed to update record: {response}")
