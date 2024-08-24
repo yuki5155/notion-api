@@ -71,30 +71,32 @@ class DatabaseProperties:
         return {name: prop.to_dict() for name, prop in self.properties.items()}
 
 
+from typing import Dict, Any, List, Union
+
+
 class DatabaseRecord:
     def __init__(self, database_id: str):
         self.database_id = database_id
-        self.properties = DatabaseProperties()
+        self.properties = {}
 
     def add_property(self, name: str, value: Union[float, str, List[str], bool]):
-        if isinstance(value, (float, int)):
-            prop = NumberProperty(float(value))
+        # in python, T/F are read as int and bool, so we need to exclude bool from int
+        if isinstance(value, (float, int)) and not isinstance(value, bool):
+            self.properties[name] = {"number": float(value)}
         elif isinstance(value, str):
             if name.lower() == "name" or name.lower() == "title":
-                prop = TextProperty(value)
+                self.properties[name] = {"title": [{"text": {"content": value}}]}
             else:
-                prop = SelectProperty(value)
+                self.properties[name] = {"select": {"name": value}}
         elif isinstance(value, list):
-            prop = MultiSelectProperty(value)
+            self.properties[name] = {"multi_select": [{"name": item} for item in value]}
         elif isinstance(value, bool):
-            prop = CheckboxProperty(value)
+            self.properties[name] = {"checkbox": value}
         else:
             raise ValueError(f"Unsupported property type for {name}: {type(value)}")
-
-        self.properties.add_property(name, prop)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "parent": {"database_id": self.database_id},
-            "properties": self.properties.to_dict(),
+            "properties": self.properties,
         }
