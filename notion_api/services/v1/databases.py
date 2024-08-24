@@ -16,6 +16,7 @@ from notion_api.domains.databases_domain import (
     DatabaseTitle,
 )
 from notion_api.utils.database_record_ops import DatabaseRecord
+from notion_api.domains.databases_domain import FilteredDatabaseRecord
 
 
 class DataBaseService(BaseService):
@@ -59,12 +60,10 @@ class DataBaseService(BaseService):
             raise ValueError(
                 f"Filter params must be a dictionary, got {type(filter_params)} instead"
             )
-        return [
-            p["properties"]
-            for p in self.client.post(
-                f"v1/databases/{database_id}/query", filter_params
-            )["body"]["results"]
-        ]
+        results = self.client.post(f"v1/databases/{database_id}/query", filter_params)[
+            "body"
+        ]["results"]
+        return [FilteredDatabaseRecord.from_dict(p) for p in results]
 
     def insert_record(self, database_id: str, record_data: dict):
         if not database_id:

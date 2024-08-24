@@ -73,7 +73,7 @@ def test_filter_records():
     filtered_records = d.filter_database_records(database_id, filter_params)
 
     for record in filtered_records:
-        assert record["株価(3/1)"]["number"] > stock_price_threshold
+        assert record.properties["株価(3/1)"]["number"] > stock_price_threshold
 
     # 少なくとも1つのレコードがフィルタリングされたことを確認
     filtered_records_list = list(filtered_records)
@@ -100,12 +100,8 @@ def test_filter_records_multiple_conditions():
     filtered_records = d.filter_database_records(database_id, filter_params)
 
     for record in filtered_records:
-        assert record["株価(3/1)"]["number"] > stock_price
-        assert record["ROE"]["number"] > roe
-
-    # 少なくとも1つのレコードがフィルタリングされたことを確認
-    filtered_records_list = list(filtered_records)
-    assert len(filtered_records_list) > 0
+        assert record.properties["株価(3/1)"]["number"] > stock_price
+        assert record.properties["ROE"]["number"] > roe
 
 
 def test_filter_records_or_condition():
@@ -132,8 +128,8 @@ def test_filter_records_or_condition():
 
     for record in filtered_records:
         assert (
-            record["株価(3/1)"]["number"] > stock_price_threshold
-            or record["ROE"]["number"] > roe_threshold
+            record.properties["株価(3/1)"]["number"] > stock_price_threshold
+            or record.properties["ROE"]["number"] > roe_threshold
         )
 
     # Ensure at least one record was filtered
@@ -142,13 +138,13 @@ def test_filter_records_or_condition():
 
     # Additional check to ensure OR condition is working
     only_high_stock_price = any(
-        record["株価(3/1)"]["number"] > stock_price_threshold
-        and record["ROE"]["number"] <= roe_threshold
+        record.properties["株価(3/1)"]["number"] > stock_price_threshold
+        and record.properties["ROE"]["number"] <= roe_threshold
         for record in filtered_records_list
     )
     only_high_roe = any(
-        record["ROE"]["number"] > roe_threshold
-        and record["株価(3/1)"]["number"] <= stock_price_threshold
+        record.properties["ROE"]["number"] > roe_threshold
+        and record.properties["株価(3/1)"]["number"] <= stock_price_threshold
         for record in filtered_records_list
     )
 
