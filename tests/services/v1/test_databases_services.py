@@ -9,6 +9,11 @@ from notion_api.utils.databases_filter_builders import (
     NumberFilterBuilder,
     FilterComposer,
 )
+from notion_api.services.v1.databases import DataBaseService
+from notion_api.utils.exceptions import APIClientNotFountError
+from notion_api.utils.database_record_ops import DatabaseRecord
+
+database_id = "6ef167bccb674124810c99f06ea1da8f"
 
 
 def test_get_databases_detail():
@@ -39,7 +44,6 @@ def test_get_databases_detail():
 
 def test_get_all_records():
     d = DataBaseService()
-    database_id = "6ef167bccb674124810c99f06ea1da8f"
 
     for i in d.get_database_records(database_id):
 
@@ -49,7 +53,7 @@ def test_get_all_records():
 
 def test_filter_records():
     d = DataBaseService()
-    database_id = "6ef167bccb674124810c99f06ea1da8f"
+
     stock_price_threshold = 5000
 
     # NumberFilterBuilder を使用してフィルターを作成
@@ -147,3 +151,24 @@ def test_filter_records_or_condition():
     assert (
         only_high_stock_price or only_high_roe
     ), "OR condition is not working as expected"
+
+
+def test_insert_record():
+    d = DataBaseService()
+
+    record = DatabaseRecord(database_id)
+    record.add_property("株価(3/1)", 9999)
+    record.add_property("ROE", 20)
+    record.add_property("決算", "年次決算")
+
+    # Insert record
+    new_record = d.insert_record(database_id, record.to_dict())
+
+    # Verify the inserted record
+    assert isinstance(new_record, dict)
+
+    # Check the properties in the returned data
+    result = new_record["properties"]
+    assert result["株価(3/1)"]["number"] == 9999
+    assert result["ROE"]["number"] == 20
+    assert result["決算"]["select"]["name"] == "年次決算"

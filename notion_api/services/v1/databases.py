@@ -64,3 +64,27 @@ class DataBaseService(BaseService):
                 f"v1/databases/{database_id}/query", filter_params
             )["body"]["results"]
         ]
+
+    def insert_record(self, database_id: str, record_data: dict):
+        """
+        データベースに新しいレコードを挿入します。
+
+        :param database_id: 挿入先のデータベースID
+        :param record_data: 挿入するレコードのデータ
+        :return: 作成されたレコードの情報
+        """
+        if not database_id:
+            raise ValueError("Database ID is required")
+        if not record_data:
+            raise ValueError("Record data is required")
+
+        # Ensure the correct structure of the record_data
+        if "parent" not in record_data or "properties" not in record_data:
+            raise ValueError("Invalid record data structure")
+
+        response = self.client.post("v1/pages", record_data)
+
+        if response["code"] == 200:
+            return response["body"]
+        else:
+            raise APIClientNotFountError(f"Failed to insert record: {response}")
