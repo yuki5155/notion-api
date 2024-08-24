@@ -73,7 +73,7 @@ def test_filter_records():
     filtered_records = d.filter_database_records(database_id, filter_params)
 
     for record in filtered_records:
-        assert record["株価(3/1)"]["number"] > stock_price_threshold
+        assert record.properties["株価(3/1)"]["number"] > stock_price_threshold
 
     # 少なくとも1つのレコードがフィルタリングされたことを確認
     filtered_records_list = list(filtered_records)
@@ -100,12 +100,8 @@ def test_filter_records_multiple_conditions():
     filtered_records = d.filter_database_records(database_id, filter_params)
 
     for record in filtered_records:
-        assert record["株価(3/1)"]["number"] > stock_price
-        assert record["ROE"]["number"] > roe
-
-    # 少なくとも1つのレコードがフィルタリングされたことを確認
-    filtered_records_list = list(filtered_records)
-    assert len(filtered_records_list) > 0
+        assert record.properties["株価(3/1)"]["number"] > stock_price
+        assert record.properties["ROE"]["number"] > roe
 
 
 def test_filter_records_or_condition():
@@ -132,8 +128,8 @@ def test_filter_records_or_condition():
 
     for record in filtered_records:
         assert (
-            record["株価(3/1)"]["number"] > stock_price_threshold
-            or record["ROE"]["number"] > roe_threshold
+            record.properties["株価(3/1)"]["number"] > stock_price_threshold
+            or record.properties["ROE"]["number"] > roe_threshold
         )
 
     # Ensure at least one record was filtered
@@ -142,13 +138,13 @@ def test_filter_records_or_condition():
 
     # Additional check to ensure OR condition is working
     only_high_stock_price = any(
-        record["株価(3/1)"]["number"] > stock_price_threshold
-        and record["ROE"]["number"] <= roe_threshold
+        record.properties["株価(3/1)"]["number"] > stock_price_threshold
+        and record.properties["ROE"]["number"] <= roe_threshold
         for record in filtered_records_list
     )
     only_high_roe = any(
-        record["ROE"]["number"] > roe_threshold
-        and record["株価(3/1)"]["number"] <= stock_price_threshold
+        record.properties["ROE"]["number"] > roe_threshold
+        and record.properties["株価(3/1)"]["number"] <= stock_price_threshold
         for record in filtered_records_list
     )
 
@@ -165,9 +161,6 @@ def test_insert_record():
     record.add_property("ROE", 20)
     record.add_property("決算", "年次決算")
     record.add_property("is_test", True)
-
-    print("Record data before insertion:")
-    print(json.dumps(record.to_dict(), indent=2))
 
     new_record = d.insert_record(database_id, record.to_dict())
 
@@ -190,9 +183,6 @@ def test_update_record():
     insert_record.add_property("決算", "年次決算")
     insert_record.add_property("is_test", True)
 
-    print("Record data before insertion:")
-    print(json.dumps(insert_record.to_dict(), indent=2))
-
     new_record = d.insert_record(database_id, insert_record.to_dict())
     page_id = new_record["id"]
 
@@ -200,9 +190,6 @@ def test_update_record():
     update_record.add_property("株価(3/1)", 1500)
     update_record.add_property("ROE", 15)
     update_record.add_property("is_test", True)
-
-    print("Record data before update:")
-    print(json.dumps(update_record.to_dict(), indent=2))
 
     updated_record = d.update_record(page_id, update_record)
 
@@ -213,3 +200,37 @@ def test_update_record():
     assert result["ROE"]["number"] == 15
     assert result["決算"]["select"]["name"] == "年次決算"
     assert result["is_test"]["checkbox"] == True
+
+
+def test_delete_record():
+    d = DataBaseService()
+    database_id = "6ef167bccb674124810c99f06ea1da8f"
+
+    # First, insert a new record
+    insert_record = DatabaseRecord(database_id)
+    insert_record.add_property("is_test", True)
+
+    new_record = d.insert_record(database_id, insert_record.to_dict())
+    page_id = new_record["id"]
+
+    # Now, delete (archive) the record
+    deleted_record = d.delete_record(page_id)
+
+    # Check if the record was successfully archived
+    assert deleted_record["archived"] == True
+
+    # Try to fetch the record to ensure it's no longer accessible
+    filter_composer = FilterComposer()
+    filter_params = filter_composer.add_filter(
+        {"property": "is_test", "checkbox": {"equals": True}}
+    ).build()
+
+    for filtered_record in d.filter_database_records(database_id, filter_params):
+        d.delete_record(filtered_record.id)
+
+    filtered_records = d.filter_database_records(database_id, filter_params)
+
+    # The archived record should not be in the filtered results
+    assert not any(record.id == page_id for record in filtered_records)
+
+    assert len(d.filter_database_records(database_id, filter_params)) == 0

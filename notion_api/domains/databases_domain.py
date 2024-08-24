@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
+from datetime import datetime
 
 
 @dataclass
@@ -199,6 +200,32 @@ class DatabaseTitle:
         return {"content": self.content, "link": self.link}
 
 
+@dataclass
+class FilteredDatabaseRecord:
+    id: str
+    properties: Dict[str, Any]
+    created_time: datetime
+    last_edited_time: datetime
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "FilteredDatabaseRecord":
+        return cls(
+            id=data["id"],
+            properties=data["properties"],
+            created_time=datetime.fromisoformat(data["created_time"].rstrip("Z")),
+            last_edited_time=datetime.fromisoformat(
+                data["last_edited_time"].rstrip("Z")
+            ),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "properties": self.properties,
+            "created_time": self.created_time.isoformat() + "Z",
+            "last_edited_time": self.last_edited_time.isoformat() + "Z",
+        }
+
+
 if __name__ == "__main__":
     p = Parent(page_id="sample")
-    print(p.to_dict())

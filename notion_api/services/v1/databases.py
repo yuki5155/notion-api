@@ -16,12 +16,7 @@ from notion_api.domains.databases_domain import (
     DatabaseTitle,
 )
 from notion_api.utils.database_record_ops import DatabaseRecord
-import json
-import logging
-import requests
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+from notion_api.domains.databases_domain import FilteredDatabaseRecord
 
 
 class DataBaseService(BaseService):
@@ -65,12 +60,10 @@ class DataBaseService(BaseService):
             raise ValueError(
                 f"Filter params must be a dictionary, got {type(filter_params)} instead"
             )
-        return [
-            p["properties"]
-            for p in self.client.post(
-                f"v1/databases/{database_id}/query", filter_params
-            )["body"]["results"]
-        ]
+        results = self.client.post(f"v1/databases/{database_id}/query", filter_params)[
+            "body"
+        ]["results"]
+        return [FilteredDatabaseRecord.from_dict(p) for p in results]
 
     def insert_record(self, database_id: str, record_data: dict):
         if not database_id:
@@ -81,18 +74,11 @@ class DataBaseService(BaseService):
         if "parent" not in record_data or "properties" not in record_data:
             raise ValueError("Invalid record data structure")
 
-        print("Payload being sent to Notion API:")
-        print(json.dumps(record_data, indent=2))
-
         response = self.client.post("v1/pages", record_data)
 
         if isinstance(response, dict) and response.get("code") == 200:
-            print("Record inserted successfully")
             return response["body"]
         else:
-            print(f"Failed to insert record: {response}")
-            if isinstance(response, requests.Response):
-                print(f"Response content: {response.text}")
             raise APIClientNotFountError(f"Failed to insert record: {response}")
 
     def update_record(self, page_id: str, record: DatabaseRecord):
@@ -102,14 +88,24 @@ class DataBaseService(BaseService):
         data = record.to_dict()
         data.pop("parent", None)  # Remove parent property for updates
 
-        logger.debug(f"Updating record with page ID {page_id}")
-        logger.debug(f"Update data: {json.dumps(data, indent=2)}")
+        response = self.client.patch(f"v1/pages/{page_id}", data)
+
+        if response["code"] == 200:
+            return response["body"]
+        else:
+            raise APIClientNotFountError(f"Failed to update record: {response}")
+
+    def delete_record(self, page_id: str):
+        if not page_id:
+            raise ValueError("Page ID is required")
+
+        data = {"archived": True}
 
         response = self.client.patch(f"v1/pages/{page_id}", data)
 
         if response["code"] == 200:
-            logger.info("Record updated successfully")
             return response["body"]
         else:
-            logger.error(f"Failed to update record: {response}")
-            raise APIClientNotFountError(f"Failed to update record: {response}")
+            raise APIClientNotFountError(
+                f"Failed to delete (archive) record: {response}"
+            )
