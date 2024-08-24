@@ -200,3 +200,37 @@ def test_update_record():
     assert result["ROE"]["number"] == 15
     assert result["決算"]["select"]["name"] == "年次決算"
     assert result["is_test"]["checkbox"] == True
+
+
+def test_delete_record():
+    d = DataBaseService()
+    database_id = "6ef167bccb674124810c99f06ea1da8f"
+
+    # First, insert a new record
+    insert_record = DatabaseRecord(database_id)
+    insert_record.add_property("is_test", True)
+
+    new_record = d.insert_record(database_id, insert_record.to_dict())
+    page_id = new_record["id"]
+
+    # Now, delete (archive) the record
+    deleted_record = d.delete_record(page_id)
+
+    # Check if the record was successfully archived
+    assert deleted_record["archived"] == True
+
+    # Try to fetch the record to ensure it's no longer accessible
+    filter_composer = FilterComposer()
+    filter_params = filter_composer.add_filter(
+        {"property": "is_test", "checkbox": {"equals": True}}
+    ).build()
+
+    for filtered_record in d.filter_database_records(database_id, filter_params):
+        d.delete_record(filtered_record.id)
+
+    filtered_records = d.filter_database_records(database_id, filter_params)
+
+    # The archived record should not be in the filtered results
+    assert not any(record.id == page_id for record in filtered_records)
+
+    assert len(d.filter_database_records(database_id, filter_params)) == 0

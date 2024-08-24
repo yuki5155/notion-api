@@ -94,3 +94,18 @@ class DataBaseService(BaseService):
             return response["body"]
         else:
             raise APIClientNotFountError(f"Failed to update record: {response}")
+
+    def delete_record(self, page_id: str):
+        if not page_id:
+            raise ValueError("Page ID is required")
+
+        data = {"archived": True}
+
+        response = self.client.patch(f"v1/pages/{page_id}", data)
+
+        if response["code"] == 200:
+            return response["body"]
+        else:
+            raise APIClientNotFountError(
+                f"Failed to delete (archive) record: {response}"
+            )
