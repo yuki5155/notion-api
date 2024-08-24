@@ -201,4 +201,3 @@ class DatabaseTitle:
 
 if __name__ == "__main__":
     p = Parent(page_id="sample")
-    print(p.to_dict())

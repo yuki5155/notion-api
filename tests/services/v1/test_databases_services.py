@@ -166,9 +166,6 @@ def test_insert_record():
     record.add_property("決算", "年次決算")
     record.add_property("is_test", True)
 
-    print("Record data before insertion:")
-    print(json.dumps(record.to_dict(), indent=2))
-
     new_record = d.insert_record(database_id, record.to_dict())
 
     assert isinstance(new_record, dict)
@@ -190,9 +187,6 @@ def test_update_record():
     insert_record.add_property("決算", "年次決算")
     insert_record.add_property("is_test", True)
 
-    print("Record data before insertion:")
-    print(json.dumps(insert_record.to_dict(), indent=2))
-
     new_record = d.insert_record(database_id, insert_record.to_dict())
     page_id = new_record["id"]
 
@@ -200,9 +194,6 @@ def test_update_record():
     update_record.add_property("株価(3/1)", 1500)
     update_record.add_property("ROE", 15)
     update_record.add_property("is_test", True)
-
-    print("Record data before update:")
-    print(json.dumps(update_record.to_dict(), indent=2))
 
     updated_record = d.update_record(page_id, update_record)
 

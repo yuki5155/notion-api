@@ -81,18 +81,11 @@ class DataBaseService(BaseService):
         if "parent" not in record_data or "properties" not in record_data:
             raise ValueError("Invalid record data structure")
 
-        print("Payload being sent to Notion API:")
-        print(json.dumps(record_data, indent=2))
-
         response = self.client.post("v1/pages", record_data)
 
         if isinstance(response, dict) and response.get("code") == 200:
-            print("Record inserted successfully")
             return response["body"]
         else:
-            print(f"Failed to insert record: {response}")
-            if isinstance(response, requests.Response):
-                print(f"Response content: {response.text}")
             raise APIClientNotFountError(f"Failed to insert record: {response}")
 
     def update_record(self, page_id: str, record: DatabaseRecord):
