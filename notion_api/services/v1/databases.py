@@ -16,12 +16,6 @@ from notion_api.domains.databases_domain import (
     DatabaseTitle,
 )
 from notion_api.utils.database_record_ops import DatabaseRecord
-import json
-import logging
-import requests
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 
 class DataBaseService(BaseService):
@@ -95,14 +89,9 @@ class DataBaseService(BaseService):
         data = record.to_dict()
         data.pop("parent", None)  # Remove parent property for updates
 
-        logger.debug(f"Updating record with page ID {page_id}")
-        logger.debug(f"Update data: {json.dumps(data, indent=2)}")
-
         response = self.client.patch(f"v1/pages/{page_id}", data)
 
         if response["code"] == 200:
-            logger.info("Record updated successfully")
             return response["body"]
         else:
-            logger.error(f"Failed to update record: {response}")
             raise APIClientNotFountError(f"Failed to update record: {response}")
