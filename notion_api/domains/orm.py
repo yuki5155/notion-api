@@ -8,6 +8,23 @@ class models(ABC):
 
 class Model:
     def __init__(self, **kwargs):
+        # Create a mapping of record_name to field_name and vice versa
+        self._field_mapping = {}
+        self._reverse_mapping = {}
+        for field_name, field in vars(self.__class__).items():
+            if isinstance(field, BaseField):
+                self._field_mapping[field.record_name] = field_name
+                self._reverse_mapping[field_name] = field.record_name
+
+        # Check for invalid fields
+        invalid_fields = [
+            key
+            for key in kwargs
+            if key not in self._field_mapping and key not in self._reverse_mapping
+        ]
+        if invalid_fields:
+            raise AttributeError(f"Invalid fields: {', '.join(invalid_fields)}")
+
         # Check for missing required fields
         required_fields = [
             field_name
@@ -19,17 +36,38 @@ class Model:
             raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
 
         for key, value in kwargs.items():
-            if hasattr(self, key):
-                field = getattr(self.__class__, key)
-                setattr(self, key, field.run(value))
-            else:
-                raise AttributeError(f"{key} is not a valid field")
+            field_name = self._field_mapping.get(key, key)
+            if hasattr(self.__class__, field_name):
+                field = getattr(self.__class__, field_name)
+                if isinstance(field, BaseField):
+                    setattr(self, field_name, field.run(value))
+                else:
+                    setattr(self, field_name, value)
+
+    def is_valid(self):
+        fields = [v for v in vars(self.__class__).values() if isinstance(v, BaseField)]
+        for field in fields:
+            field_name = self._field_mapping.get(field.record_name, field.record_name)
+            if field.is_required and getattr(self, field_name) is None:
+                return False
+        return True
 
     def save(self):
         pass
 
     def __str__(self):
-        return getattr(self, "title", f"<{self.__class__.__name__}>")
+        title_field = next(
+            (
+                f
+                for f in vars(self.__class__).values()
+                if isinstance(f, BaseField) and f.record_name == "タイトル"
+            ),
+            None,
+        )
+        if title_field:
+            field_name = self._field_mapping.get("タイトル", "タイトル")
+            return getattr(self, field_name, f"<{self.__class__.__name__}>")
+        return f"<{self.__class__.__name__}>"
 
     @classmethod
     @abstractmethod
@@ -90,8 +128,8 @@ if __name__ == "__main__":
 
     class TestModel(Model):
         title = CharField("タイトル", is_required=True)
-        content = CharField("コンテンツ")
-        number = IntegerField("番号")
+        content = CharField("content")
+        number = IntegerField("number")
 
         @classmethod
         def table_name(cls):
@@ -101,11 +139,26 @@ if __name__ == "__main__":
     print("Test: Migrate without initialization")
     TestModel.migrate()
 
-    test1 = TestModel(title="test", content="test", number=1)
+    # Test with correct field names
+    test1 = TestModel(title="test1", content="test content", number=1)
+    print(f"Test1: {test1}")
+    assert test1.is_valid()
 
-    test2 = TestModel(title="test only")
+    # Test with missing optional fields
+    test2 = TestModel(title="test2")
+    print(f"Test2: {test2}")
+    assert test2.is_valid()
 
+    # Test missing required field
     try:
-        test3 = TestModel(content="no title")
+        TestModel(content="no title")
     except ValueError as e:
         print(f"ValueError raised as expected: {e}")
+
+    # Test invalid field
+    try:
+        TestModel(title="test", invalid_field="invalid")
+    except AttributeError as e:
+        print(f"AttributeError raised as expected: {e}")
+
+    print("All tests passed successfully!")
