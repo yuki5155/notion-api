@@ -3,17 +3,25 @@ from abc import ABC, abstractmethod
 
 
 class models(ABC):
-
     pass
 
 
 class Model:
     def __init__(self, **kwargs):
+        # Check for missing required fields
+        required_fields = [
+            field_name
+            for field_name, field in vars(self.__class__).items()
+            if isinstance(field, BaseField) and field.is_required
+        ]
+        missing_fields = [field for field in required_fields if field not in kwargs]
+        if missing_fields:
+            raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
+
         for key, value in kwargs.items():
-            # キーがクラス変数に存在するか確認
             if hasattr(self, key):
-                # keyと一致するクラス変数の関数を呼び出す
-                setattr(self, key, getattr(self.__class__, key).run(value))
+                field = getattr(self.__class__, key)
+                setattr(self, key, field.run(value))
             else:
                 raise AttributeError(f"{key} is not a valid field")
 
@@ -21,18 +29,21 @@ class Model:
         pass
 
     def __str__(self):
-        return self.title
+        return getattr(self, "title", f"<{self.__class__.__name__}>")
 
+    @classmethod
     @abstractmethod
-    def table_name(self):
+    def table_name(cls):
         pass
 
-    def migrate(self):
-        # BaseFieldが継承されているかクラス変数を取得
-        fields = [v for v in vars(self.__class__).values() if isinstance(v, BaseField)]
+    @classmethod
+    def migrate(cls):
+        fields = [v for v in vars(cls).values() if isinstance(v, BaseField)]
         for field in fields:
-            print(field, "クラス名", field.__class__.__name__)
-        print(self.table_name())
+            print(
+                f"{field} (クラス名: {field.__class__.__name__}, Required: {field.is_required})"
+            )
+        print(f"Table name: {cls.table_name()}")
 
 
 class BaseField:
@@ -49,11 +60,13 @@ class BaseField:
 
 
 class CharField(BaseField):
-    def __init__(self, record_name, max_length=1000):
-        super().__init__(record_name)
+    def __init__(self, record_name, max_length=1000, is_required=False):
+        super().__init__(record_name, is_required)
         self.max_length = max_length
 
     def run(self, value):
+        if value is None and not self.is_required:
+            return None
         if not isinstance(value, str):
             raise ValueError(f"{self.record_name} must be a string")
         if len(value) > self.max_length:
@@ -62,26 +75,37 @@ class CharField(BaseField):
 
 
 class IntegerField(BaseField):
-    def __init__(self, record_name):
-        super().__init__(record_name)
+    def __init__(self, record_name, is_required=False):
+        super().__init__(record_name, is_required)
 
     def run(self, value):
+        if value is None and not self.is_required:
+            return None
         if not isinstance(value, int):
-            raise ValueError(f"{self.record_name} must be a integer")
+            raise ValueError(f"{self.record_name} must be an integer")
         return value
 
 
 if __name__ == "__main__":
 
     class TestModel(Model):
-        title = CharField("title")
-        content = CharField("content")
-        number = IntegerField("number")
+        title = CharField("タイトル", is_required=True)
+        content = CharField("コンテンツ")
+        number = IntegerField("番号")
 
-        def table_name(self):
+        @classmethod
+        def table_name(cls):
             return "test_model"
 
-    test = TestModel(title="test", content="test")
-    # print(test.title)
-    # print(test.content)
-    test.migrate()
+    # Test migrate without initialization
+    print("Test: Migrate without initialization")
+    TestModel.migrate()
+
+    test1 = TestModel(title="test", content="test", number=1)
+
+    test2 = TestModel(title="test only")
+
+    try:
+        test3 = TestModel(content="no title")
+    except ValueError as e:
+        print(f"ValueError raised as expected: {e}")
