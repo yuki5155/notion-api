@@ -1,5 +1,7 @@
 # abstract class for ORM
 from abc import ABC, abstractmethod
+from notion_api.domains.databases_domain import DatabaseTitle
+from notion_api.services.v1.databases import DataBaseService
 
 
 class Model:
@@ -84,13 +86,37 @@ class Model:
         pass
 
     @classmethod
-    def migrate(cls):
+    def choose_field(cls, field_name):
+        print(f"Field name: {field_name}")
+        if field_name == "CharField":
+            print("CharField")
+            return {"rich_text": {}}
+
+    @classmethod
+    def migrate(cls, parent_id=None):
+        db_property = {
+            "Name": {"title": {}},
+        }
+
         fields = [v for v in vars(cls).values() if isinstance(v, BaseField)]
+
         for field in fields:
-            print(
-                f"{field} (クラス名: {field.__class__.__name__}, Required: {field.is_required})"
-            )
-        print(f"Table name: {cls.table_name()}")
+            # print(
+            #     f"{field} (クラス名: {field.__class__.__name__}, Required: {field.is_required})"
+            # )
+            db_property[field.record_name] = cls.choose_field(field.__class__.__name__)
+            # print(f"Table name: {cls.table_name()}")
+        database_title = DatabaseTitle(content=cls.table_name())
+        print(f"Database title: {cls.table_name()}")
+        db_service = DataBaseService()
+        print(db_property)
+        result = db_service.create_notion_database(
+            title=database_title, parent_id=parent_id, properties=db_property
+        )
+        return {
+            "code": 200,
+            "message": f"Database {cls.table_name()} migrated successfully",
+        }
 
 
 class BaseField:

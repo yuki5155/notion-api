@@ -14,6 +14,9 @@ class TextContent:
     content: str
     link: Optional[str]
 
+    def to_dict(self):
+        return {"content": self.content, "link": self.link}
+
 
 @dataclass
 class Annotations:
@@ -24,6 +27,16 @@ class Annotations:
     code: bool
     color: str
 
+    def to_dict(self):
+        return {
+            "bold": self.bold,
+            "italic": self.italic,
+            "strikethrough": self.strikethrough,
+            "underline": self.underline,
+            "code": self.code,
+            "color": self.color,
+        }
+
 
 @dataclass
 class Title:
@@ -32,6 +45,15 @@ class Title:
     annotations: Annotations
     plain_text: str
     href: Optional[str] = None
+
+    def to_dict(self):
+        return {
+            "type": self.type,
+            "text": self.text.to_dict(),
+            "annotations": self.annotations.to_dict(),
+            "plain_text": self.plain_text,
+            "href": self.href,
+        }
 
 
 @dataclass
