@@ -2,10 +2,6 @@
 from abc import ABC, abstractmethod
 
 
-class models(ABC):
-    pass
-
-
 class Model:
     def __init__(self, **kwargs):
         # Create a mapping of record_name to field_name and vice versa
@@ -53,7 +49,20 @@ class Model:
         return True
 
     def save(self):
-        pass
+        if not self.is_valid():
+            raise ValueError("Invalid model")
+
+        # データベース操作をシミュレート
+        print(f"Saving {self.__class__.__name__} to database:")
+        for field_name, field in vars(self.__class__).items():
+            if isinstance(field, BaseField):
+                value = getattr(self, field_name)
+                print(f"  {field.record_name}: {value}: {field.__class__.__name__}")
+
+        # 実際のデータベース操作をここに追加する
+        # 例: self._insert_to_database() or self._update_database()
+
+        print(f"{self.__class__.__name__} saved successfully.")
 
     def __str__(self):
         title_field = next(
@@ -124,6 +133,12 @@ class IntegerField(BaseField):
         return value
 
 
+class models:
+    Model = Model
+    CharField = CharField
+    IntegerField = IntegerField
+
+
 if __name__ == "__main__":
 
     class TestModel(Model):
@@ -162,3 +177,6 @@ if __name__ == "__main__":
         print(f"AttributeError raised as expected: {e}")
 
     print("All tests passed successfully!")
+
+    test5 = TestModel(title="test5", content="test content", number=5)
+    test5.save()
