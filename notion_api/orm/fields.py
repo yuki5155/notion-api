@@ -1,5 +1,6 @@
 import random
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 
 class BaseField:
@@ -124,3 +125,26 @@ class MultiSelectField(BaseField):
                 f"All values in {self.record_name} must be one of the defined options"
             )
         return value
+
+
+class DateField(BaseField):
+    def __init__(self, record_name, is_required=False):
+        super().__init__(record_name, is_required)
+
+    def run(self, value):
+        if value is None and not self.is_required:
+            return None
+        if isinstance(value, str):
+            try:
+                datetime.strptime(value, "%Y-%m-%d")
+                return value
+            except ValueError:
+                raise ValueError(
+                    f"{self.record_name} must be a valid date string in YYYY-MM-DD format"
+                )
+        elif isinstance(value, datetime):
+            return value.strftime("%Y-%m-%d")
+        else:
+            raise ValueError(
+                f"{self.record_name} must be a string in YYYY-MM-DD format or a datetime object"
+            )
