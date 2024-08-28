@@ -1,5 +1,5 @@
 from .orm_models import Model
-from .fields import CharField, IntegerField, SelectField
+from .fields import CharField, IntegerField, SelectField, MultiSelectField
 
 
 class models:
@@ -7,3 +7,4 @@ class models:
     CharField = CharField
     IntegerField = IntegerField
     SelectField = SelectField
+    MultiSelectField = MultiSelectField

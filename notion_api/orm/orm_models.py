@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from .fields import BaseField, CharField, IntegerField, SelectField
+from .fields import BaseField, CharField, IntegerField, SelectField, MultiSelectField
 from notion_api.domains.databases_domain import DatabaseTitle
 from notion_api.services.v1.databases import DataBaseService
 
@@ -87,6 +87,8 @@ class Model:
             return {"number": {}}
         elif field.__class__.__name__ == SelectField.__name__:
             return {"select": {"options": field.options}}
+        elif field.__class__.__name__ == MultiSelectField.__name__:
+            return {"multi_select": {"options": field.options}}
 
     @classmethod
     def migrate(cls, parent_id=None):

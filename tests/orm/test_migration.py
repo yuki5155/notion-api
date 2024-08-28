@@ -22,8 +22,18 @@ class TestModel(models.Model):
         ],
         is_required=True,
     )
+    multi_selects = models.MultiSelectField(
+        "MultiSelects",
+        [
+            models.MultiSelectField.option("x"),
+            models.MultiSelectField.option("y"),
+            models.MultiSelectField.option("z"),
+        ],
+        is_required=False,
+    )
 
-    def table_name():
+    @classmethod
+    def table_name(cls):
         return "sample_table"
 
 
