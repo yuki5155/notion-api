@@ -6,6 +6,7 @@ from .fields import (
     SelectField,
     MultiSelectField,
     DateField,
+    BoolField,
 )
 from notion_api.domains.databases_domain import DatabaseTitle
 from notion_api.services.v1.databases import DataBaseService
@@ -98,6 +99,10 @@ class Model:
             return {"multi_select": {"options": field.options}}
         elif field.__class__.__name__ == DateField.__name__:
             return {"date": {}}
+        elif field.__class__.__name__ == BoolField.__name__:
+            return {"checkbox": {}}
+        else:
+            raise ValueError(f"Invalid field type: {field.__class__.__name__}")
 
     @classmethod
     def migrate(cls, parent_id=None):

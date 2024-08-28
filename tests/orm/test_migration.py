@@ -32,6 +32,7 @@ class TestModel(models.Model):
         is_required=False,
     )
     date_field = models.DateField("DateField", is_required=False)
+    bool_field = models.BoolField("BoolField", is_required=False)
 
     @classmethod
     def table_name(cls):

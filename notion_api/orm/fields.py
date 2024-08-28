@@ -148,3 +148,15 @@ class DateField(BaseField):
             raise ValueError(
                 f"{self.record_name} must be a string in YYYY-MM-DD format or a datetime object"
             )
+
+
+class BoolField(BaseField):
+    def __init__(self, record_name, is_required=False):
+        super().__init__(record_name, is_required)
+
+    def run(self, value):
+        if value is None and not self.is_required:
+            return None
+        if not isinstance(value, bool):
+            raise ValueError(f"{self.record_name} must be a boolean")
+        return value
