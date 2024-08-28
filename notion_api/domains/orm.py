@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from notion_api.domains.databases_domain import DatabaseTitle
 from notion_api.services.v1.databases import DataBaseService
+import random
 
 
 class Model:
@@ -86,11 +87,13 @@ class Model:
         pass
 
     @classmethod
-    def choose_field(cls, field_name):
-        print(f"Field name: {field_name}")
-        if field_name == "CharField":
-            print("CharField")
+    def choose_field(cls, field):
+        if field.__class__.__name__ == CharField.__name__:
             return {"rich_text": {}}
+        elif field.__class__.__name__ == IntegerField.__name__:
+            return {"number": {}}
+        elif field.__class__.__name__ == SelectField.__name__:
+            return {"select": {"options": field.options}}
 
     @classmethod
     def migrate(cls, parent_id=None):
@@ -101,15 +104,10 @@ class Model:
         fields = [v for v in vars(cls).values() if isinstance(v, BaseField)]
 
         for field in fields:
-            # print(
-            #     f"{field} (クラス名: {field.__class__.__name__}, Required: {field.is_required})"
-            # )
-            db_property[field.record_name] = cls.choose_field(field.__class__.__name__)
-            # print(f"Table name: {cls.table_name()}")
+            db_property[field.record_name] = cls.choose_field(field)
+
         database_title = DatabaseTitle(content=cls.table_name())
-        print(f"Database title: {cls.table_name()}")
         db_service = DataBaseService()
-        print(db_property)
         result = db_service.create_notion_database(
             title=database_title, parent_id=parent_id, properties=db_property
         )
@@ -147,6 +145,46 @@ class CharField(BaseField):
         return value
 
 
+class SelectField(BaseField):
+    def __init__(self, record_name, options, is_required=False):
+        super().__init__(record_name, is_required)
+        if not options:
+            raise ValueError("Options must be provided")
+        if not isinstance(options, list):
+            raise ValueError("Options must be a list")
+        if not all(isinstance(option, dict) for option in options):
+            raise ValueError("Options must be a list of dictionaries")
+
+        self.options = options
+
+    @classmethod
+    def option(cls, name, color=None):
+        color_list = [
+            "default",
+            "gray",
+            "brown",
+            "orange",
+            "yellow",
+            "green",
+            "blue",
+            "purple",
+            "pink",
+            "red",
+        ]
+        if color is None:
+            color = color_list[random.randint(0, len(color_list) - 1)]
+        if color not in color_list:
+            raise ValueError(f"Color must be one of {color_list}")
+        return {"name": name, "color": color}
+
+    def run(self, value):
+        if value is None and not self.is_required:
+            return None
+        if value not in self.options:
+            raise ValueError(f"{self.record_name} must be one of {self.options}")
+        return value
+
+
 class IntegerField(BaseField):
     def __init__(self, record_name, is_required=False):
         super().__init__(record_name, is_required)
@@ -163,46 +201,48 @@ class models:
     Model = Model
     CharField = CharField
     IntegerField = IntegerField
+    SelectField = SelectField
 
 
 if __name__ == "__main__":
 
-    class TestModel(Model):
-        title = CharField("タイトル", is_required=True)
-        content = CharField("content")
-        number = IntegerField("number")
+    # class TestModel(Model):
+    #     title = CharField("タイトル", is_required=True)
+    #     content = CharField("content")
+    #     number = IntegerField("number")
 
-        @classmethod
-        def table_name(cls):
-            return "test_model"
+    #     @classmethod
+    #     def table_name(cls):
+    #         return "test_model"
 
-    # Test migrate without initialization
-    print("Test: Migrate without initialization")
-    TestModel.migrate()
+    # # Test migrate without initialization
+    # print("Test: Migrate without initialization")
+    # TestModel.migrate()
 
-    # Test with correct field names
-    test1 = TestModel(title="test1", content="test content", number=1)
-    print(f"Test1: {test1}")
-    assert test1.is_valid()
+    # # Test with correct field names
+    # test1 = TestModel(title="test1", content="test content", number=1)
+    # print(f"Test1: {test1}")
+    # assert test1.is_valid()
 
-    # Test with missing optional fields
-    test2 = TestModel(title="test2")
-    print(f"Test2: {test2}")
-    assert test2.is_valid()
+    # # Test with missing optional fields
+    # test2 = TestModel(title="test2")
+    # print(f"Test2: {test2}")
+    # assert test2.is_valid()
 
-    # Test missing required field
-    try:
-        TestModel(content="no title")
-    except ValueError as e:
-        print(f"ValueError raised as expected: {e}")
+    # # Test missing required field
+    # try:
+    #     TestModel(content="no title")
+    # except ValueError as e:
+    #     print(f"ValueError raised as expected: {e}")
 
-    # Test invalid field
-    try:
-        TestModel(title="test", invalid_field="invalid")
-    except AttributeError as e:
-        print(f"AttributeError raised as expected: {e}")
+    # # Test invalid field
+    # try:
+    #     TestModel(title="test", invalid_field="invalid")
+    # except AttributeError as e:
+    #     print(f"AttributeError raised as expected: {e}")
 
-    print("All tests passed successfully!")
+    # print("All tests passed successfully!")
 
-    test5 = TestModel(title="test5", content="test content", number=5)
-    test5.save()
+    # test5 = TestModel(title="test5", content="test content", number=5)
+    # test5.save()
+    print(CharField.__name__)

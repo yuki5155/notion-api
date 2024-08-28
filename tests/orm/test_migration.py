@@ -12,6 +12,16 @@ from notion_api.domains.databases_domain import Title
 
 class TestModel(models.Model):
     username = models.CharField("Username", max_length=1000, is_required=True)
+    number = models.IntegerField("Number", is_required=True)
+    selects = models.SelectField(
+        "Selects",
+        [
+            models.SelectField.option("a"),
+            models.SelectField.option("b"),
+            models.SelectField.option("c"),
+        ],
+        is_required=True,
+    )
 
     def table_name():
         return "sample_table"
