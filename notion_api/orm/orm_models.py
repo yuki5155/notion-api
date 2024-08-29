@@ -11,6 +11,88 @@ from .fields import (
 from notion_api.domains.databases_domain import DatabaseTitle
 from notion_api.services.v1.databases import DataBaseService
 from notion_api.utils.database_record_ops import DatabaseRecord
+from notion_api.utils.databases_filter_builders import (
+    FilterComposer,
+    NumberFilterBuilder,
+    TextFilterBuilder,
+    SelectFilterBuilder,
+    MultiSelectFilterBuilder,
+    DateFilterBuilder,
+    CheckboxFilterBuilder,
+)
+
+
+class ModelFilter:
+    def __init__(self, model_class):
+        self.model_class = model_class
+
+    def filter(self, database_id, **kwargs):
+        d = DataBaseService()
+        filter_composer = FilterComposer()
+
+        for field_name, conditions in kwargs.items():
+            field = getattr(self.model_class, field_name, None)
+            if isinstance(field, BaseField):
+                filter_builder = self._get_filter_builder(field)
+                for condition, value in conditions.items():
+                    filter_method = getattr(filter_builder, condition, None)
+                    if filter_method:
+                        filter_composer.add_filter(filter_method(value).build())
+
+        filter_params = filter_composer.build()
+        filtered_records = d.filter_database_records(database_id, filter_params)
+
+        return [
+            self._create_instance_from_record(record) for record in filtered_records
+        ]
+
+    @staticmethod
+    def _get_filter_builder(field):
+        if isinstance(field, IntegerField):
+            return NumberFilterBuilder(field.record_name)
+        elif isinstance(field, CharField):
+            return TextFilterBuilder(field.record_name)
+        elif isinstance(field, SelectField):
+            return SelectFilterBuilder(field.record_name)
+        elif isinstance(field, MultiSelectField):
+            return MultiSelectFilterBuilder(field.record_name)
+        elif isinstance(field, DateField):
+            return DateFilterBuilder(field.record_name)
+        elif isinstance(field, BoolField):
+            return CheckboxFilterBuilder(field.record_name)
+        else:
+            raise ValueError(f"Unsupported field type: {type(field)}")
+
+    def _create_instance_from_record(self, record):
+        properties = {}
+        for field_name, field in vars(self.model_class).items():
+            if isinstance(field, BaseField):
+                record_name = field.record_name
+                if record_name in record.properties:
+                    prop = record.properties[record_name]
+                    if isinstance(field, CharField):
+                        properties[field_name] = (
+                            prop["rich_text"][0]["plain_text"]
+                            if prop["rich_text"]
+                            else None
+                        )
+                    elif isinstance(field, IntegerField):
+                        properties[field_name] = prop["number"]
+                    elif isinstance(field, SelectField):
+                        properties[field_name] = (
+                            prop["select"]["name"] if prop["select"] else None
+                        )
+                    elif isinstance(field, MultiSelectField):
+                        properties[field_name] = [
+                            option["name"] for option in prop["multi_select"]
+                        ]
+                    elif isinstance(field, DateField):
+                        properties[field_name] = (
+                            prop["date"]["start"] if prop["date"] else None
+                        )
+                    elif isinstance(field, BoolField):
+                        properties[field_name] = prop["checkbox"]
+        return self.model_class(**properties)
 
 
 class Model:
@@ -127,6 +209,11 @@ class Model:
             return {"checkbox": {}}
         else:
             raise ValueError(f"Invalid field type: {field.__class__.__name__}")
+
+    @classmethod
+    def filter(cls, database_id, **kwargs):
+        model_filter = ModelFilter(cls)
+        return model_filter.filter(database_id, **kwargs)
 
     @classmethod
     def migrate(cls, parent_id=None):
