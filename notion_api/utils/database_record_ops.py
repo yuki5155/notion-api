@@ -1,5 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Union
+from notion_api.orm.fields import (
+    BaseField,
+    CharField,
+    IntegerField,
+    SelectField,
+    MultiSelectField,
+    DateField,
+    BoolField,
+)
 
 
 class AbstractProperty(ABC):
@@ -75,27 +84,29 @@ from typing import Dict, Any, List, Union
 
 
 class DatabaseRecord:
-    def __init__(self, database_id: str):
+    def __init__(self, database_id):
         self.database_id = database_id
         self.properties = {}
 
-    def add_property(self, name: str, value: Union[float, str, List[str], bool]):
-        # in python, T/F are read as int and bool, so we need to exclude bool from int
-        if isinstance(value, (float, int)) and not isinstance(value, bool):
-            self.properties[name] = {"number": float(value)}
-        elif isinstance(value, str):
-            if name.lower() == "name" or name.lower() == "title":
-                self.properties[name] = {"title": [{"text": {"content": value}}]}
-            else:
-                self.properties[name] = {"select": {"name": value}}
-        elif isinstance(value, list):
+    def add_property(self, name, value, field):
+        if name == "Name":
+            self.properties[name] = {"title": [{"text": {"content": value}}]}
+        elif isinstance(field, CharField):
+            self.properties[name] = {"rich_text": [{"text": {"content": value}}]}
+        elif isinstance(field, IntegerField):
+            self.properties[name] = {"number": value}
+        elif isinstance(field, SelectField):
+            self.properties[name] = {"select": {"name": value}}
+        elif isinstance(field, MultiSelectField):
             self.properties[name] = {"multi_select": [{"name": item} for item in value]}
-        elif isinstance(value, bool):
+        elif isinstance(field, DateField):
+            self.properties[name] = {"date": {"start": value}}
+        elif isinstance(field, BoolField):
             self.properties[name] = {"checkbox": value}
         else:
-            raise ValueError(f"Unsupported property type for {name}: {type(value)}")
+            raise ValueError(f"Unsupported field type: {type(field)}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self):
         return {
             "parent": {"database_id": self.database_id},
             "properties": self.properties,

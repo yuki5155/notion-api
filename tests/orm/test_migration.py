@@ -36,10 +36,26 @@ class TestModel(models.Model):
 
     @classmethod
     def table_name(cls):
-        return "sample_table"
+        return "create_table"
 
 
 def test_db_migrate():
     TestModel.migrate(parent_id="a214e6c2d6e044d39cb5b98dc438c5dc")
-    print("Test: Migrate without initialization")
+    assert True
+
+
+def test_db_migrate_and_create():
+    model = TestModel.migrate(parent_id="a214e6c2d6e044d39cb5b98dc438c5dc")
+    database_id = model["database_id"]
+
+    create_record = TestModel(
+        username="test",
+        number=1,
+        selects="a",
+        multi_selects=["x", "y"],
+        date_field="2021-01-01",
+        bool_field=True,
+    )
+    create_record.save(database_id)
+
     assert True

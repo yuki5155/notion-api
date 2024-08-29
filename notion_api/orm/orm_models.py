@@ -10,6 +10,7 @@ from .fields import (
 )
 from notion_api.domains.databases_domain import DatabaseTitle
 from notion_api.services.v1.databases import DataBaseService
+from notion_api.utils.database_record_ops import DatabaseRecord
 
 
 class Model:
@@ -58,15 +59,38 @@ class Model:
                 return False
         return True
 
-    def save(self):
+    def save(self, database_id):
         if not self.is_valid():
             raise ValueError("Invalid model")
-        for field_name, field in vars(self.__class__).items():
-            if isinstance(field, BaseField):
-                value = getattr(self, field_name)
+        d = DataBaseService()
+        record = DatabaseRecord(database_id)
 
-        # 実際のデータベース操作をここに追加する
-        # 例: self._insert_to_database() or self._update_database()
+        # Add "Name" property as title
+        title_field = next(
+            (
+                f
+                for f in vars(self.__class__).values()
+                if isinstance(f, BaseField) and f.record_name == "Name"
+            ),
+            None,
+        )
+        if title_field:
+            title_value = getattr(
+                self, self._field_mapping.get("Name", "Name"), str(self)
+            )
+        else:
+            title_value = (
+                f"{self.__class__.__name__}_{id(self)}"  # デフォルトのタイトル
+            )
+        record.add_property("Name", title_value, CharField("Name"))
+
+        for field_name, field in vars(self.__class__).items():
+            if isinstance(field, BaseField) and field.record_name != "Name":
+                value = getattr(self, field_name)
+                record.add_property(field.record_name, value, field)
+
+        new_record = d.insert_record(database_id, record.to_dict())
+        return new_record
 
     def __str__(self):
         title_field = next(
@@ -123,4 +147,5 @@ class Model:
         return {
             "code": 200,
             "message": f"Database {cls.table_name()} migrated successfully",
+            "database_id": result["body"]["id"],
         }

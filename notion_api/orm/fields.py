@@ -66,7 +66,7 @@ class SelectField(BaseField):
     def run(self, value):
         if value is None and not self.is_required:
             return None
-        if value not in self.options:
+        if value not in [option["name"] for option in self.options]:
             raise ValueError(f"{self.record_name} must be one of {self.options}")
         return value
 
@@ -120,7 +120,9 @@ class MultiSelectField(BaseField):
             return None
         if not isinstance(value, list):
             raise ValueError(f"{self.record_name} must be a list")
-        if not all(option in self.options for option in value):
+        if not all(
+            option in [option["name"] for option in self.options] for option in value
+        ):
             raise ValueError(
                 f"All values in {self.record_name} must be one of the defined options"
             )
