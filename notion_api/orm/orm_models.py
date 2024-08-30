@@ -24,13 +24,15 @@ class ModelFilter:
     def __init__(self, model_class):
         self.model_class = model_class
 
-    def filter(self, database_id, **kwargs):
+    def filter(self, database_id, _operator="and", **kwargs):
         from notion_api.services.v1.databases import DataBaseService
 
         d = DataBaseService()
         filter_composer = FilterComposer()
 
         for field_name, conditions in kwargs.items():
+            if field_name == "_operator":
+                continue
             field = getattr(self.model_class, field_name, None)
             if isinstance(field, BaseField):
                 filter_builder = self._get_filter_builder(field)
@@ -39,7 +41,7 @@ class ModelFilter:
                     if filter_method:
                         filter_composer.add_filter(filter_method(value).build())
 
-        filter_params = filter_composer.build()
+        filter_params = filter_composer.build(_operator)
         filtered_records = d.filter_database_records(database_id, filter_params)
 
         return [
@@ -215,9 +217,9 @@ class Model:
             raise ValueError(f"Invalid field type: {field.__class__.__name__}")
 
     @classmethod
-    def filter(cls, database_id, **kwargs):
+    def filter(cls, database_id, _operator="and", **kwargs):
         model_filter = ModelFilter(cls)
-        return model_filter.filter(database_id, **kwargs)
+        return model_filter.filter(database_id, _operator=_operator, **kwargs)
 
     @classmethod
     def migrate(cls, parent_id=None):

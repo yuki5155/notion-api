@@ -111,3 +111,62 @@ def test_model_filter():
     for record in filtered_records:
         assert record.number > 10
         assert record.selects == "c"
+
+
+def test_model_filter_or():
+    # First, migrate the TestModel to create the database
+    migration_result = TestModel.migrate(parent_id="a214e6c2d6e044d39cb5b98dc438c5dc")
+    database_id = migration_result["database_id"]
+
+    # Create some test records
+    test_records = [
+        TestModel(
+            username="user1",
+            number=10,
+            selects="a",
+            multi_selects=["x", "y"],
+            date_field="2021-01-01",
+            bool_field=True,
+        ),
+        TestModel(
+            username="user2",
+            number=20,
+            selects="b",
+            multi_selects=["y", "z"],
+            date_field="2021-02-01",
+            bool_field=False,
+        ),
+        TestModel(
+            username="user3",
+            number=30,
+            selects="c",
+            multi_selects=["x", "z"],
+            date_field="2021-03-01",
+            bool_field=True,
+        ),
+    ]
+
+    # Save the test records
+    for record in test_records:
+        record.save(database_id)
+
+    # Test OR filtering
+    filtered_records = TestModel.filter(
+        database_id,
+        _operator="or",
+        number={"greater_than": 25},
+        selects={"equals": "a"},
+    )
+
+    assert len(filtered_records) == 2
+
+    for record in filtered_records:
+        assert record.number > 25 or record.selects == "a"
+
+    # Additional check to ensure OR condition is working
+    number_condition_met = any(record.number > 25 for record in filtered_records)
+    select_condition_met = any(record.selects == "a" for record in filtered_records)
+
+    assert (
+        number_condition_met and select_condition_met
+    ), "OR condition is not working as expected"
