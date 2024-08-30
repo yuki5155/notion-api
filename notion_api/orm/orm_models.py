@@ -9,8 +9,6 @@ from .fields import (
     BoolField,
 )
 from notion_api.domains.databases_domain import DatabaseTitle
-from notion_api.services.v1.databases import DataBaseService
-from notion_api.utils.database_record_ops import DatabaseRecord
 from notion_api.utils.databases_filter_builders import (
     FilterComposer,
     NumberFilterBuilder,
@@ -27,6 +25,8 @@ class ModelFilter:
         self.model_class = model_class
 
     def filter(self, database_id, **kwargs):
+        from notion_api.services.v1.databases import DataBaseService
+
         d = DataBaseService()
         filter_composer = FilterComposer()
 
@@ -144,7 +144,11 @@ class Model:
     def save(self, database_id):
         if not self.is_valid():
             raise ValueError("Invalid model")
+        from notion_api.services.v1.databases import DataBaseService
+
         d = DataBaseService()
+        from notion_api.utils.database_record_ops import DatabaseRecord
+
         record = DatabaseRecord(database_id)
 
         # Add "Name" property as title
@@ -227,6 +231,8 @@ class Model:
             db_property[field.record_name] = cls.choose_field(field)
 
         database_title = DatabaseTitle(content=cls.table_name())
+        from notion_api.services.v1.databases import DataBaseService
+
         db_service = DataBaseService()
         result = db_service.create_notion_database(
             title=database_title, parent_id=parent_id, properties=db_property
