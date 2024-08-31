@@ -94,7 +94,10 @@ class ModelFilter:
                         )
                     elif isinstance(field, BoolField):
                         properties[field_name] = prop["checkbox"]
-        return self.model_class(**properties)
+
+        instance = self.model_class(**properties)
+        instance.page_id = record.id  # Store the page_id in the instance
+        return instance
 
 
 class Model:
@@ -220,6 +223,33 @@ class Model:
     def filter(cls, database_id, _operator="and", **kwargs):
         model_filter = ModelFilter(cls)
         return model_filter.filter(database_id, _operator=_operator, **kwargs)
+
+    def get_page_id(self):
+        return self.page_id
+
+    def update(self, database_id, page_id=None):
+        if not self.is_valid():
+            raise ValueError("Invalid model")
+        if page_id is None:
+            page_id = self.get_page_id()
+        if not page_id:
+            raise ValueError("Page ID is required for update operation")
+        from notion_api.services.v1.databases import DataBaseService
+        from notion_api.utils.database_record_ops import DatabaseRecord
+
+        d = DataBaseService()
+        record = DatabaseRecord(database_id)
+
+        for field_name, field in vars(self.__class__).items():
+            if isinstance(field, BaseField):
+                value = getattr(self, field_name)
+                record.add_property(field.record_name, value, field)
+
+        updated_record = d.update_record(page_id, record)
+        return updated_record
+
+    def get_page_id(self):
+        return getattr(self, "page_id", None)
 
     @classmethod
     def migrate(cls, parent_id=None):

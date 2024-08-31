@@ -8,6 +8,7 @@ from notion_api.orm import models
 from notion_api.services.v1.databases import DataBaseService
 from notion_api.domains.databases_domain import DatabaseTitle
 from notion_api.domains.databases_domain import Title
+import time
 
 
 class TestModel(models.Model):
@@ -170,3 +171,58 @@ def test_model_filter_or():
     assert (
         number_condition_met and select_condition_met
     ), "OR condition is not working as expected"
+
+
+def test_model_update():
+    # First, migrate the TestModel to create the database
+    migration_result = TestModel.migrate(parent_id="a214e6c2d6e044d39cb5b98dc438c5dc")
+    database_id = migration_result["database_id"]
+
+    # Create a test record with a unique username
+    unique_username = f"user_{int(time.time())}"  # Use timestamp to ensure uniqueness
+    test_record = TestModel(
+        username=unique_username,
+        number=10,
+        selects="a",
+        multi_selects=["x", "y"],
+        date_field="2021-01-01",
+        bool_field=True,
+    )
+    test_record.save(database_id)
+
+    # Find the record using the unique username
+    filtered_records = TestModel.filter(
+        database_id, username={"equals": unique_username}
+    )
+    assert len(filtered_records) == 1, "Expected to find exactly one record"
+
+    original_record = filtered_records[0]
+
+    # Update the record
+    updated_record = TestModel(
+        username=unique_username,  # Keep the username the same to find it again
+        number=20,
+        selects="b",
+        multi_selects=["y", "z"],
+        date_field="2021-02-01",
+        bool_field=False,
+    )
+
+    page_id = original_record.get_page_id()
+    updated_record.update(database_id, page_id)
+
+    # Fetch the updated record
+    filtered_records = TestModel.filter(
+        database_id, username={"equals": unique_username}
+    )
+    assert len(filtered_records) == 1, "Expected to find exactly one record"
+
+    fetched_record = filtered_records[0]
+
+    # Assert that the record was updated correctly
+    assert fetched_record.username == unique_username
+    assert fetched_record.number == 20
+    assert fetched_record.selects == "b"
+    assert fetched_record.multi_selects == ["y", "z"]
+    assert fetched_record.date_field == "2021-02-01"
+    assert fetched_record.bool_field == False
