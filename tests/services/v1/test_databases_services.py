@@ -9,9 +9,15 @@ from notion_api.utils.databases_filter_builders import (
     NumberFilterBuilder,
     FilterComposer,
 )
-from notion_api.services.v1.databases import DataBaseService
 from notion_api.utils.exceptions import APIClientNotFountError
 from notion_api.utils.database_record_ops import DatabaseRecord
+from notion_api.orm.fields import (
+    IntegerField,
+    CharField,
+    SelectField,
+    MultiSelectField,
+    BoolField,
+)
 import json
 import logging
 
@@ -35,16 +41,16 @@ def test_get_databases_detail():
     assert data.properties["決算"].select["options"][0]["name"] == "年次決算"
 
 
-# def test_create_database():
-#     d = DataBaseService()
-#     parent_id = "a214e6c2d6e044d39cb5b98dc438c5dc"
-#     database_property = {
-#         "Name": {"title": {}},
-#         "Tags": {"multi_select": {"options": [{"name": "tag1"}, {"name": "tag2"}]}}
-#     }
-#     database_title = DatabaseTitle(content="Grocery List")
-#     response = d.create_notion_database(database_title, parent_id, database_property)
-#     assert response["code"] == 200
+def test_create_database():
+    d = DataBaseService()
+    parent_id = "a214e6c2d6e044d39cb5b98dc438c5dc"
+    database_property = {
+        "Name": {"title": {}},
+        "Tags": {"multi_select": {"options": [{"name": "tag1"}, {"name": "tag2"}]}},
+    }
+    database_title = DatabaseTitle(content="Grocery List")
+    response = d.create_notion_database(database_title, parent_id, database_property)
+    assert response["code"] == 200
 
 
 def test_get_all_records():
@@ -157,10 +163,14 @@ def test_insert_record():
     d = DataBaseService()
 
     record = DatabaseRecord(database_id)
-    record.add_property("株価(3/1)", 9999)
-    record.add_property("ROE", 20)
-    record.add_property("決算", "年次決算")
-    record.add_property("is_test", True)
+    record.add_property("株価(3/1)", 9999, IntegerField("株価(3/1)"))
+    record.add_property("ROE", 20, IntegerField("ROE"))
+    record.add_property(
+        "決算",
+        "年次決算",
+        SelectField("決算", options=[{"name": "年次決算"}, {"name": "四半期決算"}]),
+    )
+    record.add_property("is_test", True, BoolField("is_test"))
 
     new_record = d.insert_record(database_id, record.to_dict())
 
@@ -178,18 +188,22 @@ def test_update_record():
     database_id = "6ef167bccb674124810c99f06ea1da8f"
 
     insert_record = DatabaseRecord(database_id)
-    insert_record.add_property("株価(3/1)", 1000)
-    insert_record.add_property("ROE", 10)
-    insert_record.add_property("決算", "年次決算")
-    insert_record.add_property("is_test", True)
+    insert_record.add_property("株価(3/1)", 1000, IntegerField("株価(3/1)"))
+    insert_record.add_property("ROE", 10, IntegerField("ROE"))
+    insert_record.add_property(
+        "決算",
+        "年次決算",
+        SelectField("決算", options=[{"name": "年次決算"}, {"name": "四半期決算"}]),
+    )
+    insert_record.add_property("is_test", True, BoolField("is_test"))
 
     new_record = d.insert_record(database_id, insert_record.to_dict())
     page_id = new_record["id"]
 
     update_record = DatabaseRecord(database_id)
-    update_record.add_property("株価(3/1)", 1500)
-    update_record.add_property("ROE", 15)
-    update_record.add_property("is_test", True)
+    update_record.add_property("株価(3/1)", 1500, IntegerField("株価(3/1)"))
+    update_record.add_property("ROE", 15, IntegerField("ROE"))
+    update_record.add_property("is_test", True, BoolField("is_test"))
 
     updated_record = d.update_record(page_id, update_record)
 
@@ -208,7 +222,7 @@ def test_delete_record():
 
     # First, insert a new record
     insert_record = DatabaseRecord(database_id)
-    insert_record.add_property("is_test", True)
+    insert_record.add_property("is_test", True, BoolField("is_test"))
 
     new_record = d.insert_record(database_id, insert_record.to_dict())
     page_id = new_record["id"]
