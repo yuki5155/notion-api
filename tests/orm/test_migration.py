@@ -226,3 +226,80 @@ def test_model_update():
     assert fetched_record.multi_selects == ["y", "z"]
     assert fetched_record.date_field == "2021-02-01"
     assert fetched_record.bool_field == False
+
+
+def test_model_delete():
+    # First, migrate the TestModel to create the database
+    migration_result = TestModel.migrate(parent_id="a214e6c2d6e044d39cb5b98dc438c5dc")
+    database_id = migration_result["database_id"]
+
+    # Create a test record with a unique username
+    unique_username = f"delete_test_user_{int(time.time())}"
+    test_record = TestModel(
+        username=unique_username,
+        number=100,
+        selects="a",
+        multi_selects=["x", "y"],
+        date_field="2021-01-01",
+        bool_field=True,
+    )
+    test_record.save(database_id)
+
+    # Find the record using the unique username
+    filtered_records = TestModel.filter(
+        database_id, username={"equals": unique_username}
+    )
+    assert len(filtered_records) == 1, "Expected to find exactly one record"
+
+    record_to_delete = filtered_records[0]
+
+    # Delete the record
+    delete_result = record_to_delete.delete()
+    assert delete_result, "Expected deletion to be successful"
+
+    # Try to find the deleted record
+    filtered_records_after_delete = TestModel.filter(
+        database_id, username={"equals": unique_username}
+    )
+    assert (
+        len(filtered_records_after_delete) == 0
+    ), "Expected to find no records after deletion"
+
+
+def test_model_delete_by_id():
+    # First, migrate the TestModel to create the database
+    migration_result = TestModel.migrate(parent_id="a214e6c2d6e044d39cb5b98dc438c5dc")
+    database_id = migration_result["database_id"]
+
+    # Create a test record with a unique username
+    unique_username = f"delete_by_id_test_user_{int(time.time())}"
+    test_record = TestModel(
+        username=unique_username,
+        number=200,
+        selects="b",
+        multi_selects=["y", "z"],
+        date_field="2021-02-01",
+        bool_field=False,
+    )
+    test_record.save(database_id)
+
+    # Find the record using the unique username
+    filtered_records = TestModel.filter(
+        database_id, username={"equals": unique_username}
+    )
+    assert len(filtered_records) == 1, "Expected to find exactly one record"
+
+    record_to_delete = filtered_records[0]
+    page_id = record_to_delete.get_page_id()
+
+    # Delete the record using delete_by_id
+    delete_result = TestModel.delete_by_id(database_id, page_id)
+    assert delete_result, "Expected deletion to be successful"
+
+    # Try to find the deleted record
+    filtered_records_after_delete = TestModel.filter(
+        database_id, username={"equals": unique_username}
+    )
+    assert (
+        len(filtered_records_after_delete) == 0
+    ), "Expected to find no records after deletion"

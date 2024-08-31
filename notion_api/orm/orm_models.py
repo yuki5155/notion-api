@@ -251,6 +251,33 @@ class Model:
     def get_page_id(self):
         return getattr(self, "page_id", None)
 
+    def delete(self):
+        if not hasattr(self, "page_id") or not self.page_id:
+            raise ValueError("Cannot delete a record without a page_id")
+
+        from notion_api.services.v1.databases import DataBaseService
+
+        d = DataBaseService()
+
+        deleted_record = d.delete_record(self.page_id)
+
+        if deleted_record["archived"]:
+            # Clear the page_id after successful deletion
+            self.page_id = None
+            return True
+        else:
+            return False
+
+    @classmethod
+    def delete_by_id(cls, database_id, page_id):
+        from notion_api.services.v1.databases import DataBaseService
+
+        d = DataBaseService()
+
+        deleted_record = d.delete_record(page_id)
+
+        return deleted_record["archived"]
+
     @classmethod
     def migrate(cls, parent_id=None):
         db_property = {
